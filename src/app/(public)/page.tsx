@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BadgeCheck, Bell, LayoutList, Lock, Sprout } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { SiteFooter } from "@/components/site-footer";
+import { Reveal } from "@/components/reveal";
 import { OpportunityTicket, type TicketData } from "@/components/opportunity-ticket";
 import { ButtonLink } from "@/components/ui/button";
 import { listPublicOpportunities } from "@/server/services/opportunity.service";
@@ -117,7 +118,9 @@ export default async function Landing() {
           <div className="relative space-y-3 p-1" aria-label="Exemplos de oportunidades">
             {SAMPLES.map((t, i) => (
               <div key={t.id} className={i === 1 ? "md:translate-x-6" : i === 2 ? "md:-translate-x-3" : ""}>
-                <OpportunityTicket t={t} />
+                <div className="hero-in" style={{ animationDelay: `${200 + i * 140}ms` }}>
+                  <OpportunityTicket t={t} />
+                </div>
               </div>
             ))}
           </div>
@@ -136,9 +139,9 @@ export default async function Landing() {
             </ButtonLink>
           </div>
           <div className="mt-8 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {openings.map((o) => (
+            {openings.map((o, i) => (
+              <Reveal key={o.id} delay={(i % 3) * 90} className="h-full">
               <OpportunityTicket
-                key={o.id}
                 href="/cadastro?perfil=freelancer"
                 t={{
                   id: o.id,
@@ -160,6 +163,7 @@ export default async function Landing() {
                   slots: o.slots,
                 }}
               />
+              </Reveal>
             ))}
           </div>
           <p className="mt-6 text-center text-[15px] text-ink-2">
@@ -174,25 +178,30 @@ export default async function Landing() {
       {/* Diferencial: o marketplace é aberto */}
       <section className="border-y border-line bg-mist">
         <div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 md:grid-cols-3">
-          <div className="md:col-span-1">
+          <Reveal from="left" className="md:col-span-1">
             <h2 className="text-3xl font-extrabold leading-tight tracking-[-0.02em]">
               A plataforma conecta. Quem contrata decide.
             </h2>
-          </div>
+          </Reveal>
           <div className="grid gap-6 sm:grid-cols-2 md:col-span-2">
+            <Reveal>
             <Point icon={<Sprout className="size-5" />} title="Sem experiência? Pode se candidatar.">
               Nenhuma vaga some do seu feed por causa de cargo ou currículo. Muita gente consegue o primeiro trabalho
               com um contratante disposto a ensinar.
             </Point>
+            </Reveal>
+            <Reveal delay={120}>
             <Point icon={<BadgeCheck className="size-5" />} title="Reputação que não dá para inventar">
               Nota e número de trabalhos vêm só de trabalhos concluídos aqui dentro, confirmados pelos dois lados.
             </Point>
+            </Reveal>
           </div>
         </div>
       </section>
 
       {/* Como funciona: dois caminhos, cada um uma sequência real */}
       <section className="mx-auto grid max-w-7xl gap-12 px-5 py-20 md:grid-cols-2">
+        <Reveal className="h-full">
         <Steps
           cta={{ href: "/cadastro?perfil=freelancer", label: "Criar conta de freelancer" }}
           title="Para quem quer trabalhar"
@@ -202,6 +211,8 @@ export default async function Landing() {
             "Foi selecionado? Trabalhe, confirme a conclusão e avalie quem contratou.",
           ]}
         />
+        </Reveal>
+        <Reveal delay={150} className="h-full">
         <Steps
           cta={{ href: "/cadastro?perfil=contratante", label: "Criar conta de contratante" }}
           title="Para quem precisa contratar"
@@ -211,12 +222,13 @@ export default async function Landing() {
             "Escolha quem vai, marque o trabalho como concluído e avalie.",
           ]}
         />
+        </Reveal>
       </section>
 
       {/* Contratação imediata mostrada pelo próprio produto: a vaga e o aviso que chega ao freelancer */}
       <section className="border-t border-line">
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-20 md:grid-cols-2">
-          <div>
+          <Reveal from="left">
             <h2 className="text-3xl font-extrabold leading-tight tracking-[-0.02em] sm:text-4xl">
               Alguém faltou e a casa abre às 18h?
             </h2>
@@ -226,8 +238,9 @@ export default async function Landing() {
             <ButtonLink href="/cadastro?perfil=contratante" className="mt-7" size="lg">
               Publicar uma vaga
             </ButtonLink>
-          </div>
+          </Reveal>
           <div className="space-y-6">
+            <Reveal from="right" delay={150}>
             <figure className="ml-auto max-w-sm">
               <figcaption className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-3">
                 <Bell className="size-4" /> Aviso no celular do freelancer
@@ -243,12 +256,15 @@ export default async function Landing() {
                 </div>
               </div>
             </figure>
+            </Reveal>
+            <Reveal delay={400}>
             <figure>
               <figcaption className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-3">
                 <LayoutList className="size-4" /> A vaga no topo do feed de oportunidades
               </figcaption>
               <OpportunityTicket t={SAMPLES[0]} />
             </figure>
+            </Reveal>
           </div>
         </div>
       </section>
@@ -270,7 +286,7 @@ function Point({ icon, title, children }: { icon: React.ReactNode; title: string
 
 function Steps({ title, steps, cta }: { title: string; steps: string[]; cta: { href: string; label: string } }) {
   return (
-    <div className="flex flex-col">
+    <div className="flex h-full flex-col">
       <h2 className="text-2xl font-extrabold tracking-[-0.02em]">{title}</h2>
       <ol className="mb-8 mt-6 space-y-5">
         {steps.map((s, i) => (
