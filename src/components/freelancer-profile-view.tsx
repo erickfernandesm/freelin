@@ -33,7 +33,7 @@ export function FreelancerProfileView({ data, actions }: { data: Data; actions?:
             {courses.length > 0 && (
               <a href="#cursos" className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-signal-50 px-2.5 py-1 text-xs font-bold text-warn">
                 <Trophy className="size-3.5" />
-                {courses.length} {courses.length === 1 ? "curso Freelin concluído" : "cursos Freelin concluídos"}
+                {courses.length} {courses.length === 1 ? "troféu Freelin" : "troféus Freelin"}
               </a>
             )}
           </div>
@@ -118,25 +118,32 @@ export function FreelancerProfileView({ data, actions }: { data: Data; actions?:
 
       {courses.length > 0 && (
         <Card>
-          <h2 id="cursos" className="flex scroll-mt-28 items-center gap-2 font-bold">
-            <span className="grid size-8 place-items-center rounded-xl bg-signal text-ink">
-              <Trophy className="size-4" />
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="cursos" className="flex scroll-mt-28 items-center gap-2.5 font-bold">
+              <span className="grid size-9 place-items-center rounded-xl bg-signal text-ink">
+                <Trophy className="size-[18px]" />
+              </span>
+              Troféus Freelin
+            </h2>
+            <span className="rounded-full bg-signal-50 px-3 py-1 text-sm font-extrabold text-warn tabular">
+              {courses.length} {courses.length === 1 ? "troféu" : "troféus"}
             </span>
-            Cursos concluídos no Freelin
-          </h2>
+          </div>
+          <p className="mt-2 text-sm text-ink-3">Cursos feitos e concluídos aqui na plataforma, aula por aula.</p>
           <ul className="mt-4 grid gap-2 sm:grid-cols-2">
             {courses.map((c) => (
               <li key={c.id} className="flex items-center gap-3 rounded-2xl bg-mist p-3">
-                <span className="text-2xl" aria-hidden>
+                <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-paper text-2xl ring-1 ring-line" aria-hidden>
                   {c.course.emoji ?? "🎓"}
                 </span>
-                <span className="min-w-0">
-                  <span className="block truncate font-semibold">{c.course.title}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="line-clamp-2 font-semibold leading-snug">{c.course.title}</span>
                   <span className="block truncate text-sm text-ink-3">
                     {c.course.provider}
                     {c.completedAt ? `, ${shortDate(dateToISO(c.completedAt))}` : ""}
                   </span>
                 </span>
+                <Trophy className="size-4 shrink-0 text-warn" aria-label="Troféu" />
               </li>
             ))}
           </ul>

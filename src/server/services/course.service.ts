@@ -257,6 +257,19 @@ export async function completedCourses(userId: string) {
   });
 }
 
+/** Cursos concluídos de várias pessoas (troféus nas listas de candidatos) */
+export async function completedCoursesByUser(userIds: string[]): Promise<Map<string, Array<{ title: string; emoji: string | null }>>> {
+  const out = new Map<string, Array<{ title: string; emoji: string | null }>>();
+  if (userIds.length === 0) return out;
+  const rows = await db.enrollment.findMany({
+    where: { userId: { in: userIds }, completedAt: { not: null } },
+    orderBy: { completedAt: "desc" },
+    select: { userId: true, course: { select: { title: true, emoji: true } } },
+  });
+  for (const r of rows) out.set(r.userId, [...(out.get(r.userId) ?? []), r.course]);
+  return out;
+}
+
 /** Certificado público, verificável pelo código */
 export async function getCertificate(code: string) {
   const e = await db.enrollment.findUnique({

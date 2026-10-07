@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, Users, Zap } from "lucide-react";
+import { CheckCircle2, Trophy, Users, Zap } from "lucide-react";
 import { setOpportunityStatusAction } from "@/actions/opportunity";
 import { requireUser } from "@/server/auth/session";
 import { orNotFound, readParams } from "@/server/page";
 import { evaluateAgendaFit } from "@/server/domain/availability";
 import { dateToISO } from "@/server/domain/time";
 import { getOpportunityForContractor, markApplicationsViewed, toSchedule } from "@/server/services/opportunity.service";
+import { completedCoursesByUser } from "@/server/services/course.service";
 import { freelancerReputations } from "@/server/services/reputation.service";
 import { AGENDA_FIT_LABEL, APPLICATION_STATUS, CONTRACT_STATUS, EXPERIENCE_LABEL, OPPORTUNITY_STATUS } from "@/lib/constants";
 import { relativeTime, todayLocalISO } from "@/lib/format";
@@ -40,7 +41,10 @@ export default async function ManageOpportunityPage({
   const filled = opp._count.contracts;
   const remaining = Math.max(0, opp.slots - filled);
   const canSelect = opp.status === "OPEN" && remaining > 0;
-  const reps = await freelancerReputations(opp.applications.map((a) => ({ id: a.freelancer.id, userId: a.freelancer.userId })));
+  const [reps, trophies] = await Promise.all([
+    freelancerReputations(opp.applications.map((a) => ({ id: a.freelancer.id, userId: a.freelancer.userId }))),
+    completedCoursesByUser(opp.applications.map((a) => a.freelancer.userId)),
+  ]);
   const st = OPPORTUNITY_STATUS[opp.status];
 
   const groups = [
@@ -149,6 +153,7 @@ export default async function ManageOpportunityPage({
                   ];
                   const days = [...new Set(f.availability.filter((s) => s.kind === "AVAILABLE" && s.weekday != null).map((s) => s.weekday!))];
                   const status = a.contract ? CONTRACT_STATUS[a.contract.status] : APPLICATION_STATUS[a.status];
+                  const courses = trophies.get(f.userId) ?? [];
                   return (
                     <li key={a.id} className="rounded-3xl bg-paper p-4 ring-1 ring-line/70 sm:p-5">
                       <Link href={`/profissional/${f.id}?candidatura=${a.id}`} className="flex items-start gap-3">
@@ -174,7 +179,19 @@ export default async function ManageOpportunityPage({
                               {f.experienceYears ? `, ${f.experienceYears} ${f.experienceYears === 1 ? "ano" : "anos"}` : ""}
                             </Badge>
                             {fit && <Badge tone={fit.tone}>{fit.label}</Badge>}
+
                           </div>
+                          {courses.length > 0 && (
+                            <p className="mt-2 flex items-start gap-1.5 text-sm text-ink-2">
+                              <Trophy className="mt-0.5 size-4 shrink-0 text-warn" />
+                              <span>
+                                <strong className="text-ink">
+                                  {courses.length} {courses.length === 1 ? "troféu" : "troféus"} Freelin:
+                                </strong>{" "}
+                                {courses.map((c) => c.title).join(", ")}
+                              </span>
+                            </p>
+                          )}
                           <p className="mt-2 text-sm text-ink-2">
                             {f.mainCity?.name ?? "Cidade não informada"}
                             {days.length > 0 && `, disponível ${days.sort((x, y) => ((x + 6) % 7) - ((y + 6) % 7)).map((d) => WEEK[d]).join(", ")}`}
