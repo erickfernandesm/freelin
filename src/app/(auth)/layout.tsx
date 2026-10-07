@@ -9,7 +9,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <p className="max-w-md text-[34px] font-extrabold leading-[1.1] tracking-[-0.02em]">
             Trabalho de verdade, perto de você, com quem já foi avaliado por outras pessoas.
           </p>
-          <p className="mt-4 max-w-sm text-white/80">Juiz de Fora e região.</p>
         </div>
         <div aria-hidden className="absolute -bottom-24 -right-24 size-80 rounded-full border-[28px] border-white/10" />
       </aside>
