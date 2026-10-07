@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BadgeCheck, Lock, Sprout } from "lucide-react";
 import { Logo } from "@/components/brand";
+import { SiteFooter } from "@/components/site-footer";
 import { OpportunityTicket, type TicketData } from "@/components/opportunity-ticket";
 import { ButtonLink } from "@/components/ui/button";
 import { listPublicOpportunities } from "@/server/services/opportunity.service";
@@ -211,12 +212,7 @@ export default async function Landing() {
         />
       </section>
 
-      <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-3 px-5 py-8 text-sm text-ink-3 sm:flex-row sm:items-center">
-          <Logo height={22} />
-          <p>Feito em Juiz de Fora, MG.</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
