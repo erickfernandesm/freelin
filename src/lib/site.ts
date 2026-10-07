@@ -6,7 +6,7 @@
  *  - whatsapp: só números, com DDI e DDD (ex.: "5532999990000")
  */
 export const CONTACT = {
-  instagram: "",
+  instagram: "freelin.oficial",
   email: "",
   whatsapp: "",
 };
