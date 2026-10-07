@@ -92,7 +92,7 @@ export async function markWorkDone(actor: CurrentUser, contractId: string) {
   });
 }
 
-/** Freelancer: "Confirmar trabalho concluído" — só aqui o trabalho conta na reputação */
+/** Freelancer: "Confirmar trabalho concluído". Só aqui o trabalho conta na reputação */
 export async function confirmWorkDone(actor: CurrentUser, contractId: string) {
   const { contract, isFreelancer } = await loadContract(contractId, actor);
   if (!isFreelancer) throw new ForbiddenError();

@@ -18,8 +18,8 @@ Pré-requisitos: **Node 22.18+** e **PostgreSQL 14+** (local, Docker ou um banco
 ```bash
 npm install
 cp .env.example .env          # ajuste DATABASE_URL, DIRECT_URL e AUTH_SECRET
-npx prisma migrate dev --name init
-npm run db:seed               # cidades, funções, cursos e contas de demonstração
+npx prisma migrate deploy
+npm run db:seed               # municípios do IBGE, funções, cursos e contas de demonstração
 npm run dev                   # http://localhost:3000
 ```
 
@@ -34,7 +34,7 @@ docker run -d --name freelin-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=fre
 | E-mail | Perfil |
 |---|---|
 | `maria@freelin.app` | Freelancer com experiência e histórico (1 trabalho concluído, avaliada) |
-| `joao@freelin.app` | Freelancer **sem experiência** — vê e se candidata a tudo da região |
+| `joao@freelin.app` | Freelancer **sem experiência**: vê e se candidata a tudo da região |
 | `carlos@freelin.app` | Freelancer de Santos Dumont, deslocamento até 50 km |
 | `bar@freelin.app` | Contratante (Bar Estação Central) |
 | `buffet@freelin.app` | Contratante (Buffet Villa Mariano) |

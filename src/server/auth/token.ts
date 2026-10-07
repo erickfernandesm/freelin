@@ -1,5 +1,5 @@
 /**
- * Token de sessão (JWT HS256). Sem dependência de Next — usado pelo
+ * Token de sessão (JWT HS256). Sem dependência de Next: usado pelo
  * middleware (edge) e pelo servidor.
  */
 import { SignJWT, jwtVerify } from "jose";

@@ -21,7 +21,7 @@ export default async function WorksPage() {
   const cancelled = contracts.filter((c) => c.status === "CANCELLED");
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <PageHeader
         title="Trabalhos"
         subtitle={<ReputationLine rating={summary.reputation.rating} jobs={summary.reputation.jobs} reviews={summary.reputation.reviews} />}
@@ -39,7 +39,7 @@ export default async function WorksPage() {
           {confirm.length > 0 && (
             <>
               <SectionTitle count={confirm.length}>Confirme a conclusão</SectionTitle>
-              <div className="space-y-3">
+              <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
                 {confirm.map((c) => (
                   <ContractCard key={c.id} c={c} side="freelancer" today={today} />
                 ))}
@@ -49,7 +49,7 @@ export default async function WorksPage() {
           {upcoming.length > 0 && (
             <>
               <SectionTitle count={upcoming.length}>Próximos e em andamento</SectionTitle>
-              <div className="space-y-3">
+              <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
                 {upcoming.map((c) => (
                   <ContractCard key={c.id} c={c} side="freelancer" today={today} />
                 ))}
@@ -59,7 +59,7 @@ export default async function WorksPage() {
           {done.length > 0 && (
             <>
               <SectionTitle count={done.length}>Concluídos</SectionTitle>
-              <div className="space-y-3">
+              <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
                 {done.map((c) => (
                   <ContractCard key={c.id} c={c} side="freelancer" today={today} />
                 ))}
@@ -69,7 +69,7 @@ export default async function WorksPage() {
           {cancelled.length > 0 && (
             <>
               <SectionTitle>Cancelados</SectionTitle>
-              <div className="space-y-3 opacity-70">
+              <div className="grid gap-3 opacity-70 lg:grid-cols-2 2xl:grid-cols-3">
                 {cancelled.map((c) => (
                   <ContractCard key={c.id} c={c} side="freelancer" today={today} />
                 ))}

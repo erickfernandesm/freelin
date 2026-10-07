@@ -2,7 +2,7 @@
  * Compatibilidade de agenda.
  *
  * Resultado é apenas INFORMATIVO: serve para ordenar o feed e mostrar um selo
- * ("Combina com sua agenda"). Nunca bloqueia visualização nem candidatura —
+ * ("Combina com sua agenda"). Nunca bloqueia visualização nem candidatura;
  * o freelancer mantém autonomia para demonstrar interesse.
  */
 import { addDaysISO, diffDaysISO, rangesOverlap, shiftToRange, weekdayOf } from "./time.ts";

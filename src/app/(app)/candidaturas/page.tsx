@@ -24,7 +24,7 @@ export default async function ApplicationsPage() {
   const closed = apps.filter((a) => ["REJECTED", "CANCELLED", "COMPLETED"].includes(a.status));
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <PageHeader title="Candidaturas" subtitle="Acompanhe cada oportunidade em que você demonstrou interesse." />
       {apps.length === 0 ? (
         <EmptyState
@@ -64,7 +64,7 @@ type App = Awaited<ReturnType<typeof listMyApplications>>[number];
 
 function List({ items, today, muted }: { items: App[]; today: string; muted?: boolean }) {
   return (
-    <ul className="space-y-3">
+    <ul className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
       {items.map((a) => {
         const s = APPLICATION_STATUS[a.status];
         const o = a.opportunity;
@@ -73,7 +73,7 @@ function List({ items, today, muted }: { items: App[]; today: string; muted?: bo
           <li key={a.id}>
             <Link
               href={a.status === "SELECTED" ? "/trabalhos" : `/oportunidades/${o.id}`}
-              className={`block rounded-3xl bg-paper p-4 ring-1 ring-line/70 transition-shadow hover:shadow-lift ${muted ? "opacity-75" : ""}`}
+              className={`block h-full rounded-3xl bg-paper p-4 ring-1 ring-line/70 transition-shadow hover:shadow-lift ${muted ? "opacity-75" : ""}`}
             >
               <div className="flex items-start gap-3">
                 <Avatar name={o.contractor.displayName} src={o.contractor.user.avatarUrl} size={40} square />

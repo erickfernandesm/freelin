@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { adminCreateCityAction, adminCreateCourseAction, adminCreateRoleAction } from "@/actions/admin";
+import { adminCreateCourseAction, adminCreateRoleAction } from "@/actions/admin";
 import { Button } from "@/components/ui/button";
 import { Input, Select, Textarea } from "@/components/ui/field";
 import { useActionForm } from "@/components/use-action-form";
@@ -32,27 +32,6 @@ export function NewRoleForm() {
           Adicionar
         </Button>
       </div>
-      <Errors fe={fe} error={state.error} />
-    </form>
-  );
-}
-
-export function NewCityForm() {
-  const { ref, onSubmit, pending, fe, state } = useResettingForm(adminCreateCityAction);
-  return (
-    <form ref={ref} onSubmit={onSubmit} className="space-y-2">
-      <div className="grid grid-cols-[1fr_4.5rem] gap-2">
-        <Input name="name" placeholder="Nome da cidade" aria-label="Nome" />
-        <Input name="state" placeholder="UF" maxLength={2} className="uppercase" aria-label="UF" />
-      </div>
-      <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
-        <Input name="lat" placeholder="Latitude" inputMode="decimal" aria-label="Latitude" />
-        <Input name="lng" placeholder="Longitude" inputMode="decimal" aria-label="Longitude" />
-        <Button type="submit" loading={pending}>
-          Adicionar
-        </Button>
-      </div>
-      <p className="text-xs text-ink-3">Coordenadas do centro da cidade, usadas no cálculo de deslocamento.</p>
       <Errors fe={fe} error={state.error} />
     </form>
   );

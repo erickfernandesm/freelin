@@ -33,7 +33,7 @@ export function dayLabel(iso: string | null | undefined, today = todayLocalISO()
 }
 
 export function shortDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" }).format(isoParts(iso));
 }
 
@@ -100,4 +100,34 @@ export function capitalize(s: string) {
 
 export function cn(...parts: Array<string | false | null | undefined>) {
   return parts.filter(Boolean).join(" ");
+}
+
+/** Horas de um turno ("18:00" a "00:00" = 6) */
+export function shiftHours(start?: string | null, end?: string | null): number | null {
+  if (!start || !end) return null;
+  const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  let diff = toMin(end) - toMin(start);
+  if (diff <= 0) diff += 24 * 60;
+  return Math.round((diff / 60) * 10) / 10;
+}
+
+const hoursLabel = (h: number) => `${String(h).replace(".", ",")}h`;
+
+/** Linha de apoio do valor: "turno de 6h", "por hora", "por mês" */
+export function payDetail(unit: string, start?: string | null, end?: string | null): string | null {
+  if (unit === "HOUR") return "por hora";
+  if (unit === "MONTH") return "por mês";
+  if (unit === "TOTAL") return "valor total";
+  const h = shiftHours(start, end);
+  return h ? `turno de ${hoursLabel(h)}` : "por turno";
+}
+
+/** Valor completo para detalhes: "R$ 120 por turno de 6h (R$ 20/h)" */
+export function payFull(cents: number | null | undefined, unit: string, start?: string | null, end?: string | null): string {
+  if (cents == null) return "A combinar";
+  const base = money(cents);
+  if (unit !== "SHIFT") return `${base} ${payDetail(unit, start, end)}`;
+  const h = shiftHours(start, end);
+  if (!h) return `${base} por turno`;
+  return `${base} por turno de ${hoursLabel(h)} (${money(Math.round(cents / h))}/h)`;
 }

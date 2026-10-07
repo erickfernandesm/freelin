@@ -1,6 +1,6 @@
 import { Banknote, CalendarDays, Clock, MapPin, Repeat, Users, Wallet } from "lucide-react";
 import { OPPORTUNITY_TYPE_LABEL } from "@/lib/constants";
-import { dayLabel, money, shortDate, timeRange, weekdaysLabel } from "@/lib/format";
+import { dayLabel, payFull, shortDate, timeRange, weekdaysLabel } from "@/lib/format";
 import type { OpportunitySchedule } from "@/server/domain/types";
 
 export function OpportunityFacts({
@@ -14,6 +14,7 @@ export function OpportunityFacts({
   slots,
   remaining,
   today,
+  compact,
 }: {
   schedule: OpportunitySchedule;
   payCents: number | null;
@@ -25,6 +26,7 @@ export function OpportunityFacts({
   slots: number;
   remaining: number;
   today?: string;
+  compact?: boolean;
 }) {
   const when =
     schedule.type === "SINGLE"
@@ -36,7 +38,7 @@ export function OpportunityFacts({
           : "Dias a combinar";
 
   const rows = [
-    { icon: Banknote, label: "Valor", value: money(payCents, { unit: payUnit }) },
+    { icon: Banknote, label: "Valor", value: payFull(payCents, payUnit, schedule.startTime, schedule.endTime) },
     { icon: CalendarDays, label: schedule.type === "SINGLE" ? "Data" : "Quando", value: when },
     { icon: Clock, label: "Horário", value: timeRange(schedule.startTime, schedule.endTime) ?? "A combinar" },
     { icon: MapPin, label: "Local", value: address ? `${address}, ${cityName} - ${state}` : `${cityName} - ${state}` },
@@ -50,7 +52,7 @@ export function OpportunityFacts({
   ];
 
   return (
-    <dl className="grid gap-px overflow-hidden rounded-3xl bg-line ring-1 ring-line sm:grid-cols-2">
+    <dl className={`grid gap-px overflow-hidden rounded-3xl bg-line ring-1 ring-line ${compact ? "" : "sm:grid-cols-2"}`}>
       {rows.map((r) => (
         <div key={r.label} className="flex items-start gap-3 bg-paper p-4">
           <r.icon className="mt-0.5 size-5 shrink-0 text-brand" aria-hidden />

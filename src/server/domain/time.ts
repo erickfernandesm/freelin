@@ -81,3 +81,10 @@ export const WEEKDAYS_LONG = [
   "Sexta",
   "Sábado",
 ] as const;
+
+/** Duração do turno em horas (18:00 → 00:00 = 6) */
+export function shiftHours(start: string | null, end: string | null): number | null {
+  if (!start || !end || !isValidTime(start) || !isValidTime(end)) return null;
+  const [s, e] = shiftToRange(start, end);
+  return Math.round(((e - s) / 60) * 10) / 10;
+}

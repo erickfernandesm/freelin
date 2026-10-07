@@ -6,7 +6,7 @@ import { freelancerReputations } from "./reputation.service";
 
 /**
  * Busca de profissionais pelo contratante.
- * Ferramenta de descoberta — não interfere na distribuição de oportunidades.
+ * Ferramenta de descoberta, não interfere na distribuição de oportunidades.
  */
 export async function searchFreelancers(filters: TalentSearch) {
   const and: Prisma.FreelancerProfileWhereInput[] = [

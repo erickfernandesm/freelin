@@ -70,21 +70,15 @@ export const freelancerProfileSchema = z
     phone: optionalText(20),
     headline: optionalText(80),
     bio: optionalText(800),
-    mainCityId: z.string().min(1, "Escolha sua cidade principal"),
+    mainCityId: z.string().min(1, "Digite e escolha a cidade onde você mora"),
     workCityIds: z.array(z.string()).max(30).default([]),
     travelPreference: travelPreference,
-    roleIds: z.array(z.string()).max(15).default([]), // opcional
+    roleIds: z.array(z.string()).max(5, "Escolha até 5 funções").default([]), // opcional
     experienceLevel: experienceLevel.optional(), // opcional
     experienceYears: z.coerce.number().int().min(0).max(60).optional(),
     experienceDescription: optionalText(600),
     skills: z.array(z.string().trim().min(1).max(30)).max(15).default([]),
-    rateMinCents: z.number().int().min(0).optional(),
-    rateMaxCents: z.number().int().min(0).optional(),
     availability: z.array(availabilitySlotSchema).max(60).default([]),
-  })
-  .refine((v) => !v.rateMinCents || !v.rateMaxCents || v.rateMinCents <= v.rateMaxCents, {
-    message: "O valor mínimo não pode ser maior que o máximo",
-    path: ["rateMaxCents"],
   });
 
 export type FreelancerProfileInput = z.infer<typeof freelancerProfileSchema>;
@@ -94,8 +88,8 @@ export const contractorProfileSchema = z.object({
   kind: z.enum(["COMPANY", "PERSON"]),
   segment: z.string().trim().min(2, "Escolha o segmento").max(40),
   description: optionalText(800),
-  cityId: z.string().min(1, "Escolha a cidade"),
-  contactPhone: optionalText(20),
+  cityId: z.string().min(1, "Digite e escolha a cidade"),
+  contactPhone: z.string().trim().min(10, "Informe um WhatsApp com DDD").max(20),
   contactEmail: z
     .string()
     .trim()
@@ -112,8 +106,9 @@ export const opportunitySchema = z
     title: z.string().trim().min(4, "Dê um título claro à oportunidade").max(80),
     roleId: z.string().optional().transform((v) => v || undefined),
     slots: z.coerce.number().int().min(1, "Pelo menos 1 vaga").max(200),
-    cityId: z.string().min(1, "Escolha a cidade"),
+    cityId: z.string().min(1, "Digite e escolha a cidade"),
     address: optionalText(160),
+    reachKm: z.coerce.number().int().min(0).max(200).optional(),
     type: z.enum(["SINGLE", "RECURRING", "TEMPORARY", "FIXED"]),
     startDate: isoDate.optional().or(z.literal("").transform(() => undefined)),
     endDate: isoDate.optional().or(z.literal("").transform(() => undefined)),
@@ -149,6 +144,7 @@ export const feedFiltersSchema = z.object({
   funcao: z.string().optional(),
   tipo: z.enum(["SINGLE", "RECURRING", "TEMPORARY", "FIXED"]).optional(),
   urgente: z.literal("1").optional(),
+  combina: z.literal("1").optional(),
   de: isoDate.optional(),
   ate: isoDate.optional(),
   valorMin: z.coerce.number().int().min(0).optional(),

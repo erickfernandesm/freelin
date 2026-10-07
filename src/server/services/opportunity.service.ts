@@ -4,12 +4,11 @@ import { db, type Tx } from "@/server/db";
 import { DomainError, ForbiddenError, NotFoundError } from "@/server/errors";
 import { notify } from "@/server/notifications/notify";
 import { evaluateAgendaFit } from "@/server/domain/availability";
-import { computeReach, reachIncludesCity } from "@/server/domain/eligibility";
-import { rankFeed } from "@/server/domain/ranking";
+import { isLocationConfigured, isVisibleTo, freelancerReaches, opportunityAccepts, type FreelancerLocation } from "@/server/domain/eligibility";
+import { matchesMyProfile, rankFeed } from "@/server/domain/ranking";
 import { dateToISO, isoToDate, todayISO } from "@/server/domain/time";
 import type { OpportunitySchedule } from "@/server/domain/types";
 import type { FeedFilters, OpportunityInput } from "@/lib/validation";
-import { listCities } from "./catalog.service";
 import { availabilityToSlots, getFreelancerProfileByUser } from "./profile.service";
 
 /** Contratações que ocupam vaga */
@@ -61,8 +60,9 @@ const cardSelect = {
   payCents: true,
   payUnit: true,
   cityId: true,
+  reachKm: true,
   createdAt: true,
-  city: { select: { name: true, state: true } },
+  city: { select: { id: true, name: true, state: true, lat: true, lng: true } },
   role: { select: { id: true, name: true, emoji: true } },
   contractor: { select: { id: true, displayName: true, user: { select: { avatarUrl: true } } } },
   _count: { select: { contracts: { where: { status: { in: [...SLOT_TAKING] } } } } },
@@ -70,25 +70,25 @@ const cardSelect = {
 
 // ───────────────────────── Feed do freelancer ─────────────────────────
 
+type ProfileWithCities = NonNullable<Awaited<ReturnType<typeof getFreelancerProfileByUser>>>;
+
+function locationOf(profile: ProfileWithCities): FreelancerLocation {
+  return {
+    mainCity: profile.mainCity,
+    workCityIds: profile.workCities.map((w) => w.cityId),
+    travel: profile.travelPreference,
+  };
+}
+
 export async function getFeed(userId: string, filters: FeedFilters) {
   const profile = await getFreelancerProfileByUser(userId);
   if (!profile) throw new NotFoundError("Perfil");
-
-  const cities = await listCities();
-  const reach = computeReach(
-    {
-      mainCityId: profile.mainCityId,
-      workCityIds: profile.workCities.map((w) => w.cityId),
-      travel: profile.travelPreference,
-    },
-    cities,
-  );
+  const location = locationOf(profile);
   const today = todayISO();
 
-  // Somente critérios objetivos (região + vigência) + filtros escolhidos pelo próprio freelancer.
+  // Vigência no banco; localização (das duas pontas) em memória.
   // Função/experiência do PERFIL nunca entram aqui.
   const and: Prisma.OpportunityWhereInput[] = [currentWhere(today)];
-  if (reach.mode === "CITIES") and.push({ cityId: { in: [...reach.cityIds] } });
   if (filters.cidade) and.push({ cityId: filters.cidade });
   if (filters.funcao) and.push({ roleId: filters.funcao });
   if (filters.tipo) and.push({ type: filters.tipo });
@@ -98,7 +98,7 @@ export async function getFeed(userId: string, filters: FeedFilters) {
   if (filters.ate) and.push({ OR: [{ startDate: null }, { startDate: { lte: isoToDate(filters.ate) } }] });
 
   const [rows, myApps] = await Promise.all([
-    db.opportunity.findMany({ where: { AND: and }, select: cardSelect, take: 200 }),
+    db.opportunity.findMany({ where: { AND: and }, select: cardSelect, orderBy: { createdAt: "desc" }, take: 500 }),
     db.application.findMany({
       where: { freelancerId: profile.id },
       select: { opportunityId: true, status: true },
@@ -106,23 +106,37 @@ export async function getFeed(userId: string, filters: FeedFilters) {
   ]);
   const appBy = new Map(myApps.map((a) => [a.opportunityId, a.status]));
   const slots = availabilityToSlots(profile.availability);
+  const myRoleIds = profile.roles.map((r) => r.roleId);
 
-  const items = rows.map((o) => {
-    const schedule = toSchedule(o);
-    return {
-      ...o,
-      startDateISO: schedule.startDate,
-      endDateISO: schedule.endDate,
-      remaining: Math.max(0, o.slots - o._count.contracts),
-      agendaFit: evaluateAgendaFit(schedule, slots),
-      myStatus: appBy.get(o.id) ?? null,
-      startDate: schedule.startDate,
-    };
-  });
+  const visible = rows
+    .filter((o) => isVisibleTo(location, o))
+    .map((o) => {
+      const schedule = toSchedule(o);
+      return {
+        ...o,
+        startDateISO: schedule.startDate,
+        endDateISO: schedule.endDate,
+        remaining: Math.max(0, o.slots - o._count.contracts),
+        agendaFit: evaluateAgendaFit(schedule, slots),
+        myStatus: appBy.get(o.id) ?? null,
+        startDate: schedule.startDate,
+        roleId: o.role?.id ?? null,
+      };
+    });
 
+  const items = filters.combina ? visible.filter((o) => matchesMyProfile(o, { roleIds: myRoleIds })) : visible;
   const ranked = rankFeed(items, { today, mainCityId: profile.mainCityId });
-  const reachableCities = cities.filter((c) => reachIncludesCity(reach, c.id));
-  return { items: ranked, reach, reachableCities, today };
+
+  // Cidades para o filtro: as que têm oportunidade visível
+  const cityMap = new Map(visible.map((o) => [o.city.id, { id: o.city.id, name: o.city.name }]));
+  return {
+    items: ranked,
+    configured: isLocationConfigured(location),
+    location: { mainCity: profile.mainCity, travel: profile.travelPreference, extraCities: profile.workCities.length },
+    canMatch: myRoleIds.length > 0 || slots.length > 0,
+    filterCities: [...cityMap.values()].sort((a, b) => a.name.localeCompare(b.name)),
+    today,
+  };
 }
 
 export type FeedItem = Awaited<ReturnType<typeof getFeed>>["items"][number];
@@ -130,7 +144,7 @@ export type FeedItem = Awaited<ReturnType<typeof getFeed>>["items"][number];
 // ───────────────────────── Detalhe ─────────────────────────
 
 const detailInclude = {
-  city: { select: { id: true, name: true, state: true } },
+  city: { select: { id: true, name: true, state: true, lat: true, lng: true } },
   role: { select: { id: true, name: true, emoji: true } },
   contractor: {
     select: {
@@ -153,15 +167,7 @@ export async function getOpportunityForFreelancer(id: string, userId: string) {
   if (!opp || !profile) throw new NotFoundError("Oportunidade");
   if (opp.status === "CANCELLED") throw new NotFoundError("Oportunidade");
 
-  const cities = await listCities();
-  const reach = computeReach(
-    {
-      mainCityId: profile.mainCityId,
-      workCityIds: profile.workCities.map((w) => w.cityId),
-      travel: profile.travelPreference,
-    },
-    cities,
-  );
+  const location = locationOf(profile);
   const schedule = toSchedule(opp);
   const myApplication = await db.application.findUnique({
     where: { opportunityId_freelancerId: { opportunityId: id, freelancerId: profile.id } },
@@ -171,7 +177,8 @@ export async function getOpportunityForFreelancer(id: string, userId: string) {
     opp,
     schedule,
     remaining: Math.max(0, opp.slots - opp._count.contracts),
-    inReach: reachIncludesCity(reach, opp.cityId),
+    inReach: freelancerReaches(location, opp.city),
+    acceptedByContractor: opportunityAccepts(opp, location.mainCity),
     agendaFit: evaluateAgendaFit(schedule, availabilityToSlots(profile.availability)),
     myApplication,
     today: todayISO(),
@@ -186,33 +193,27 @@ async function contractorIdFor(userId: string) {
   return c.id;
 }
 
-/** Quem deve ser avisado de uma nova oportunidade: só critério de região */
-async function eligibleFreelancerUserIds(cityId: string) {
-  // MVP: avalia em memória. Em escala, migrar para consulta geoespacial (PostGIS).
-  const [cities, freelancers] = await Promise.all([
-    listCities(),
-    db.freelancerProfile.findMany({
-      where: { user: { status: "ACTIVE", onboardedAt: { not: null } } },
-      select: {
-        userId: true,
-        mainCityId: true,
-        travelPreference: true,
-        workCities: { select: { cityId: true } },
-      },
-    }),
-  ]);
+/** Quem deve ser avisado de uma nova oportunidade: só critérios de localização */
+async function eligibleFreelancerUserIds(opp: { city: { id: string; lat: number; lng: number }; reachKm: number | null }) {
+  // Avaliado em memória. Em escala, migrar para consulta geoespacial (PostGIS).
+  const freelancers = await db.freelancerProfile.findMany({
+    where: { user: { status: "ACTIVE", onboardedAt: { not: null } } },
+    select: {
+      userId: true,
+      travelPreference: true,
+      mainCity: { select: { id: true, lat: true, lng: true } },
+      workCities: { select: { cityId: true } },
+    },
+  });
   return freelancers
     .filter((f) => {
-      const reach = computeReach(
-        {
-          mainCityId: f.mainCityId,
-          workCityIds: f.workCities.map((w) => w.cityId),
-          travel: f.travelPreference,
-        },
-        cities,
-      );
-      // Perfil sem região não recebe push de tudo; só vê no feed.
-      return reach.configured && reachIncludesCity(reach, cityId);
+      const location: FreelancerLocation = {
+        mainCity: f.mainCity,
+        workCityIds: f.workCities.map((w) => w.cityId),
+        travel: f.travelPreference,
+      };
+      // Perfil sem região não recebe aviso de tudo; só vê no feed.
+      return isLocationConfigured(location) && isVisibleTo(location, opp);
     })
     .map((f) => f.userId);
 }
@@ -220,7 +221,7 @@ async function eligibleFreelancerUserIds(cityId: string) {
 export async function createOpportunity(userId: string, input: OpportunityInput) {
   const contractorId = await contractorIdFor(userId);
   const city = await db.city.findFirst({ where: { id: input.cityId, active: true } });
-  if (!city) throw new DomainError("Escolha uma cidade atendida pela plataforma.");
+  if (!city) throw new DomainError("Escolha uma cidade da lista.");
   const today = todayISO();
   if (input.type === "SINGLE" && input.startDate && input.startDate < today)
     throw new DomainError("A data não pode estar no passado.");
@@ -238,7 +239,7 @@ export async function createOpportunity(userId: string, input: OpportunityInput)
       type: input.type,
       startDate: input.startDate ? isoToDate(input.startDate) : null,
       endDate: input.endDate ? isoToDate(input.endDate) : null,
-      recurrenceDays: input.type === "RECURRING" || input.type === "TEMPORARY" ? input.recurrenceDays : [],
+      recurrenceDays: input.type === "SINGLE" ? [] : input.recurrenceDays,
       startTime: input.startTime ?? null,
       endTime: input.endTime ?? null,
       payCents: input.payCents ?? null,
@@ -247,16 +248,17 @@ export async function createOpportunity(userId: string, input: OpportunityInput)
       description: input.description,
       requirements: input.requirements ?? null,
       urgent: input.urgent,
+      reachKm: input.reachKm ?? null,
     },
   });
 
-  const recipients = (await eligibleFreelancerUserIds(opp.cityId)).filter((id) => id !== userId);
+  const recipients = (await eligibleFreelancerUserIds({ city, reachKm: opp.reachKm })).filter((id) => id !== userId);
   await notify(recipients, {
     type: opp.urgent ? "URGENT_OPPORTUNITY" : "NEW_OPPORTUNITY",
     title: opp.urgent
       ? `Contratação imediata: ${opp.title}`
       : "Uma nova oportunidade foi publicada na sua região",
-    body: opp.urgent ? `${city.name} · vaga para hoje` : `${opp.title} · ${city.name}`,
+    body: opp.urgent ? `${city.name}, vaga para hoje` : `${opp.title}, ${city.name}`,
     href: `/oportunidades/${opp.id}`,
   });
   return opp;
@@ -362,4 +364,25 @@ export async function syncOpportunityFill(opportunityId: string, tx: Tx = db) {
   } else if (opp.status === "FILLED" && opp._count.contracts < opp.slots) {
     await tx.opportunity.update({ where: { id: opp.id }, data: { status: "OPEN" } });
   }
+}
+
+// ───────────────────────── Vitrine pública (página inicial) ─────────────────────────
+
+/** Oportunidades abertas para quem ainda não entrou: só dados públicos do card */
+export async function listPublicOpportunities(limit = 6) {
+  const rows = await db.opportunity.findMany({
+    where: currentWhere(todayISO()),
+    select: cardSelect,
+    orderBy: [{ urgent: "desc" }, { startDate: "asc" }, { createdAt: "desc" }],
+    take: limit,
+  });
+  return rows.map((o) => {
+    const schedule = toSchedule(o);
+    return {
+      ...o,
+      startDateISO: schedule.startDate,
+      endDateISO: schedule.endDate,
+      remaining: Math.max(0, o.slots - o._count.contracts),
+    };
+  });
 }

@@ -51,3 +51,16 @@ export function rankFeed<T extends RankInput>(
         b.createdAt.getTime() - a.createdAt.getTime(),
     );
 }
+
+/**
+ * Filtro "Só as que combinam comigo", ligado pelo PRÓPRIO freelancer.
+ * Preferência de navegação: não altera o que ele pode ver ou candidatar.
+ */
+export function matchesMyProfile(
+  opp: { roleId: string | null; agendaFit: AgendaFit },
+  me: { roleIds: string[] },
+): boolean {
+  const roleOk = !opp.roleId || me.roleIds.length === 0 || me.roleIds.includes(opp.roleId);
+  const agendaOk = opp.agendaFit !== "MISMATCH" && opp.agendaFit !== "UNAVAILABLE";
+  return roleOk && agendaOk;
+}

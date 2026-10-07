@@ -26,7 +26,7 @@ export default async function ContractorHome({
   const past = opps.filter((o) => o.status === "CLOSED" || o.status === "CANCELLED");
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div>
       {sp["bem-vindo"] && (
         <div className="mb-6 rounded-3xl bg-brand p-5 text-white animate-pop">
           <p className="font-bold">Tudo pronto, {dash.profile.displayName}!</p>
@@ -66,7 +66,7 @@ export default async function ContractorHome({
           Precisa de alguém para hoje? Marque como contratação imediata e ela aparece em destaque.
         </EmptyState>
       ) : (
-        <ul className="space-y-3">
+        <ul className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
           {live.map((o) => (
             <OppRow key={o.id} o={o} today={today} />
           ))}
@@ -76,7 +76,7 @@ export default async function ContractorHome({
       {past.length > 0 && (
         <>
           <SectionTitle>Encerradas</SectionTitle>
-          <ul className="space-y-3 opacity-75">
+          <ul className="grid gap-3 opacity-75 lg:grid-cols-2 2xl:grid-cols-3">
             {past.map((o) => (
               <OppRow key={o.id} o={o} today={today} />
             ))}
@@ -92,7 +92,7 @@ function OppRow({ o, today }: { o: Awaited<ReturnType<typeof listContractorOppor
   const when = o.type === "SINGLE" ? dayLabel(o.startDateISO, today) : o.recurrenceDays.length ? weekdaysLabel(o.recurrenceDays) : "Contínua";
   return (
     <li>
-      <Link href={`/vagas/${o.id}`} className="block rounded-3xl bg-paper p-4 ring-1 ring-line/70 transition-shadow hover:shadow-lift sm:p-5">
+      <Link href={`/vagas/${o.id}`} className="flex h-full flex-col justify-between rounded-3xl bg-paper p-4 ring-1 ring-line/70 transition-shadow hover:shadow-lift sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="flex items-center gap-1.5 font-bold leading-snug">

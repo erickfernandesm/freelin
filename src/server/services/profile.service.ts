@@ -7,7 +7,7 @@ import { contractorReputation, criteriaAverages, freelancerReputation } from "./
 
 const freelancerInclude = {
   user: { select: { id: true, name: true, avatarUrl: true, phone: true, email: true, createdAt: true } },
-  mainCity: { select: { id: true, name: true, state: true } },
+  mainCity: { select: { id: true, name: true, state: true, lat: true, lng: true } },
   workCities: { include: { city: { select: { id: true, name: true, state: true } } } },
   roles: { include: { role: { select: { id: true, name: true, emoji: true } } } },
   availability: true,
@@ -40,7 +40,7 @@ export async function saveFreelancerProfile(
 
   const cityIds = [...new Set([input.mainCityId, ...input.workCityIds])];
   const validCities = await db.city.count({ where: { id: { in: cityIds }, active: true } });
-  if (validCities !== cityIds.length) throw new DomainError("Escolha cidades válidas.");
+  if (validCities !== cityIds.length) throw new DomainError("Escolha as cidades na lista de sugestões.");
 
   await db.$transaction(async (tx) => {
     await tx.user.update({
@@ -63,8 +63,6 @@ export async function saveFreelancerProfile(
         experienceYears: input.experienceLevel === "NONE" ? null : (input.experienceYears ?? null),
         experienceDescription: input.experienceDescription ?? null,
         skills: [...new Set(input.skills.map((s) => s.trim()).filter(Boolean))],
-        rateMinCents: input.rateMinCents ?? null,
-        rateMaxCents: input.rateMaxCents ?? null,
       },
     });
     await tx.freelancerCity.deleteMany({ where: { freelancerId: profile.id } });
@@ -110,7 +108,7 @@ export async function saveContractorProfile(
   opts: { avatarUrl?: string | null; completeOnboarding?: boolean } = {},
 ) {
   const city = await db.city.findFirst({ where: { id: input.cityId, active: true } });
-  if (!city) throw new DomainError("Escolha uma cidade válida.");
+  if (!city) throw new DomainError("Escolha a cidade na lista de sugestões.");
   await db.$transaction(async (tx) => {
     await tx.contractorProfile.update({
       where: { userId },
@@ -135,7 +133,7 @@ export async function saveContractorProfile(
   });
 }
 
-/** Perfil público do freelancer — o que o contratante vê para decidir */
+/** Perfil público do freelancer: o que o contratante vê para decidir */
 export async function getFreelancerPublic(profileId: string) {
   const profile = await db.freelancerProfile.findFirst({
     where: { id: profileId, user: { status: "ACTIVE" } },

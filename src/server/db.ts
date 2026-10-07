@@ -4,12 +4,14 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
 
 /**
- * Neon (produção/Cloudflare): driver adapter serverless, um cliente por requisição —
- * no Workers, conexões abertas numa requisição não podem ser reutilizadas em outra.
- * Postgres comum (desenvolvimento local): cliente padrão, reaproveitado entre requisições.
+ * Neon: driver adapter serverless. Postgres comum (local): cliente padrão.
+ * No Cloudflare Workers, conexões abertas numa requisição não podem ser reutilizadas
+ * em outra, então lá o cliente é criado por requisição. Em Node (Vercel, local)
+ * um único cliente é reaproveitado.
  */
 const url = process.env.DATABASE_URL ?? "";
 const useNeon = /\.neon\.tech/.test(url);
+const onWorkers = typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
 const log: Array<"warn" | "error"> = process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"];
 
 function createClient() {
@@ -22,7 +24,7 @@ const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 const perRequest = cache(createClient);
 
 function current(): PrismaClient {
-  if (useNeon) return perRequest();
+  if (onWorkers) return perRequest();
   globalForPrisma.prisma ??= createClient();
   return globalForPrisma.prisma;
 }

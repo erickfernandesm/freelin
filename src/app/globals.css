@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
-  Freelin — tokens
+  Freelin: tokens
   Azul da marca + tinta (o mesmo azul-marinho do "Free" no logo) sobre branco.
   O amarelo-sinal é reservado para contratação imediata: é o único grito da interface.
 */
@@ -67,7 +67,50 @@
   .tabular {
     font-variant-numeric: tabular-nums;
   }
+  /* Tailwind 4 não aplica cursor de clique por padrão */
+  button:not(:disabled),
+  [role="button"],
+  [role="option"],
+  summary,
+  select,
+  label:has(> input[type="checkbox"]:not(:disabled)),
+  label:has(> input[type="radio"]:not(:disabled)),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="date"],
+  input[type="time"],
+  input[type="file"] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
+
+/* Tela de carregamento */
+@keyframes loader-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-14px) scale(1.04); }
+  60% { transform: translateY(0) scale(0.97, 1.03); }
+}
+@keyframes loader-ring {
+  0% { transform: scale(0.7); opacity: 0.55; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+@keyframes loader-shadow {
+  0%, 100% { transform: scaleX(1); opacity: 0.18; }
+  45% { transform: scaleX(0.6); opacity: 0.08; }
+}
+@keyframes loader-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+.loader-bounce { animation: loader-bounce 1.1s cubic-bezier(0.5, 0, 0.5, 1) infinite; }
+.loader-ring { animation: loader-ring 1.6s ease-out infinite; }
+.loader-ring-2 { animation: loader-ring 1.6s ease-out 0.8s infinite; }
+.loader-shadow { animation: loader-shadow 1.1s cubic-bezier(0.5, 0, 0.5, 1) infinite; }
+.loader-bar { animation: loader-bar 1.2s ease-in-out infinite; }
 
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { requireUser } from "@/server/auth/session";
-import { listCities, listRoles } from "@/server/services/catalog.service";
+import { listRoles } from "@/server/services/catalog.service";
 import { freelancerFormInitial } from "@/server/services/forms";
 import { BackLink } from "@/components/back-link";
 import { FreelancerProfileForm } from "@/components/forms/freelancer-profile-form";
@@ -10,12 +10,12 @@ export const metadata: Metadata = { title: "Editar perfil" };
 
 export default async function EditProfilePage() {
   const user = await requireUser("FREELANCER");
-  const [initial, cities, roles] = await Promise.all([freelancerFormInitial(user.id), listCities(), listRoles()]);
+  const [initial, roles] = await Promise.all([freelancerFormInitial(user.id), listRoles()]);
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-6xl">
       <BackLink href="/perfil">Meu perfil</BackLink>
       <PageHeader title="Editar perfil" subtitle="Regiões, deslocamento e agenda definem o que aparece para você." />
-      <FreelancerProfileForm mode="edit" initial={initial} cities={cities} roles={roles} />
+      <FreelancerProfileForm mode="edit" initial={initial} roles={roles} />
     </div>
   );
 }

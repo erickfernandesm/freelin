@@ -51,7 +51,7 @@ export default async function ManageOpportunityPage({
   ];
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div>
       <BackLink href="/painel">Painel</BackLink>
 
       {sp.publicada && (
@@ -61,6 +61,8 @@ export default async function ManageOpportunityPage({
         </div>
       )}
 
+      <div className="grid items-start gap-8 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]">
+      <aside className="lg:sticky lg:top-24">
       <div className="flex flex-wrap items-center gap-2">
         <Badge tone={st.tone}>{st.label}</Badge>
         {opp.urgent && (
@@ -105,11 +107,15 @@ export default async function ManageOpportunityPage({
           slots={opp.slots}
           remaining={remaining}
           today={todayLocalISO()}
+          compact
         />
       </div>
+      </aside>
+
+      <div className="min-w-0">
 
       {opp.applications.length === 0 ? (
-        <div className="mt-8">
+        <div>
           <EmptyState icon={<Users className="size-7" />} title="Ainda sem candidatos">
             Avisamos os freelancers da região. Os interessados aparecem aqui, e você recebe uma notificação a cada candidatura.
           </EmptyState>
@@ -125,7 +131,7 @@ export default async function ManageOpportunityPage({
                   Em ordem de chegada. {canSelect ? `Você ainda pode selecionar ${remaining} ${remaining === 1 ? "pessoa" : "pessoas"}.` : "Todas as vagas estão preenchidas."}
                 </p>
               )}
-              <ul className="space-y-3">
+              <ul className="grid gap-3 2xl:grid-cols-2">
                 {g.items.map((a) => {
                   const f = a.freelancer;
                   const rep = reps.get(f.id)!;
@@ -192,6 +198,8 @@ export default async function ManageOpportunityPage({
             </section>
           ))
       )}
+      </div>
+      </div>
     </div>
   );
 }

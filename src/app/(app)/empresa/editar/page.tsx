@@ -3,7 +3,6 @@ import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { signOutAction } from "@/actions/auth";
 import { requireUser } from "@/server/auth/session";
-import { listCities } from "@/server/services/catalog.service";
 import { contractorFormInitial } from "@/server/services/forms";
 import { ContractorProfileForm } from "@/components/forms/contractor-profile-form";
 import { Card, PageHeader } from "@/components/ui/misc";
@@ -12,9 +11,9 @@ export const metadata: Metadata = { title: "Perfil do contratante" };
 
 export default async function EditContractorPage() {
   const user = await requireUser("CONTRACTOR");
-  const [initial, cities] = await Promise.all([contractorFormInitial(user.id), listCities()]);
+  const initial = await contractorFormInitial(user.id);
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-4xl">
       <PageHeader
         title="Seu perfil"
         subtitle={
@@ -29,9 +28,9 @@ export default async function EditContractorPage() {
         }
       />
       <Card className="sm:p-6">
-        <ContractorProfileForm mode="edit" initial={initial} cities={cities} />
+        <ContractorProfileForm mode="edit" initial={initial} />
       </Card>
-      <form action={signOutAction} className="mt-6 md:hidden">
+      <form action={signOutAction} className="mt-6 lg:hidden">
         <button className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-ink-3 hover:bg-ink/5">
           <LogOut className="size-4" /> Sair da conta
         </button>

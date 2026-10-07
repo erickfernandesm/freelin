@@ -30,7 +30,7 @@ export default async function FreelancerPublicPage({
       : null;
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       {application ? (
         <BackLink href={`/vagas/${application.opportunityId}`}>{application.title}</BackLink>
       ) : user.role === "CONTRACTOR" ? (

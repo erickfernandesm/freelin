@@ -22,7 +22,7 @@ async function freelancerFor(userId: string) {
 /**
  * "Tenho interesse". Só verifica critérios objetivos da OPORTUNIDADE
  * (aberta, vigente, sem candidatura repetida). Função e experiência do
- * perfil não são consultadas — de propósito.
+ * perfil não são consultadas, de propósito.
  */
 export async function applyToOpportunity(userId: string, opportunityId: string, message?: string) {
   const freelancer = await freelancerFor(userId);

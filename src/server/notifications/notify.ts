@@ -5,7 +5,7 @@ import { db, type Tx } from "@/server/db";
 /**
  * Disparo de notificações com canais plugáveis.
  * Hoje: "in_app" (tabela Notification). Push, e-mail e WhatsApp entram como
- * novos canais aqui — quem chama `notify()` não muda.
+ * novos canais aqui; quem chama `notify()` não muda.
  */
 export type NotificationPayload = {
   type: NotificationType;

@@ -7,7 +7,7 @@ import type { CurrentUser } from "@/server/auth/session";
 
 /**
  * Avaliação bilateral, sempre presa a uma contratação concluída.
- * A direção é deduzida de quem está avaliando — ninguém escolhe o alvo.
+ * A direção é deduzida de quem está avaliando; ninguém escolhe o alvo.
  */
 export async function submitReview(
   actor: CurrentUser,

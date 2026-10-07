@@ -17,6 +17,7 @@ export async function createOpportunityAction(_: ActionState, form: FormData): P
     slots: form.get("slots"),
     cityId: form.get("cityId") ?? "",
     address: formString(form, "address"),
+    reachKm: formString(form, "reachKm"),
     type: form.get("type"),
     startDate: formString(form, "startDate"),
     endDate: formString(form, "endDate"),

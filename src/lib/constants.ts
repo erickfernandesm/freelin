@@ -8,7 +8,7 @@ export const TRAVEL_OPTIONS = [
 ] as const;
 
 export const EXPERIENCE_OPTIONS = [
-  { value: "NONE", label: "Ainda não tenho experiência", hint: "Tudo bem — muita gente começa por aqui" },
+  { value: "NONE", label: "Ainda não tenho experiência", hint: "Tudo bem, muita gente começa por aqui" },
   { value: "INFORMAL", label: "Experiência informal", hint: "Bicos, eventos de amigos, família" },
   { value: "PROFESSIONAL", label: "Experiência profissional", hint: "Já trabalhei registrado ou como freelancer" },
 ] as const;
@@ -34,14 +34,14 @@ export const OPPORTUNITY_TYPE_LABEL: Record<string, string> = {
 };
 
 export const PAY_UNITS = [
-  { value: "SHIFT", label: "por diária", short: "/diária" },
+  { value: "SHIFT", label: "por turno", short: "/turno" },
   { value: "HOUR", label: "por hora", short: "/hora" },
   { value: "MONTH", label: "por mês", short: "/mês" },
   { value: "TOTAL", label: "valor total", short: "" },
 ] as const;
 
 export const PAY_UNIT_SHORT: Record<string, string> = {
-  SHIFT: "/diária",
+  SHIFT: "/turno",
   HOUR: "/hora",
   MONTH: "/mês",
   TOTAL: "",

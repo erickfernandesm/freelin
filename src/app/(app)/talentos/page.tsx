@@ -3,7 +3,8 @@ import Link from "next/link";
 import { SearchX } from "lucide-react";
 import { requireUser } from "@/server/auth/session";
 import { readParams } from "@/server/page";
-import { listCities, listRoles } from "@/server/services/catalog.service";
+import { getCities, listRoles } from "@/server/services/catalog.service";
+import { CityInput } from "@/components/forms/city-input";
 import { searchFreelancers } from "@/server/services/search.service";
 import { EXPERIENCE_LABEL, EXPERIENCE_OPTIONS } from "@/lib/constants";
 import { talentSearchSchema } from "@/lib/validation";
@@ -26,23 +27,21 @@ export default async function TalentPage({
   const raw = await readParams(searchParams);
   const parsed = talentSearchSchema.safeParse(raw);
   const filters = parsed.success ? parsed.data : {};
-  const [results, cities, roles] = await Promise.all([searchFreelancers(filters), listCities(), listRoles()]);
+  const [results, [city], roles] = await Promise.all([
+    searchFreelancers(filters),
+    getCities(filters.cidade ? [filters.cidade] : []),
+    listRoles(),
+  ]);
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div>
       <PageHeader title="Profissionais" subtitle="Encontre freelancers da região e conheça o histórico de cada um." />
 
       {/* GET simples: funciona sem JS e a URL pode ser compartilhada */}
-      <form className="grid gap-3 rounded-3xl bg-paper p-4 ring-1 ring-line/70 sm:grid-cols-3" role="search">
-        <Input name="q" defaultValue={filters.q} placeholder="Nome ou habilidade" aria-label="Buscar" className="sm:col-span-3" />
-        <Select name="cidade" defaultValue={filters.cidade ?? ""} aria-label="Cidade">
-          <option value="">Todas as cidades</option>
-          {cities.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </Select>
+      <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+      <form className="grid content-start gap-3 rounded-3xl bg-paper p-4 ring-1 ring-line/70 sm:grid-cols-2 lg:sticky lg:top-24 lg:grid-cols-1" role="search">
+        <Input name="q" defaultValue={filters.q} placeholder="Nome ou habilidade" aria-label="Buscar" className="sm:col-span-2 lg:col-span-1" />
+        <CityInput name="cidade" initial={city ?? null} placeholder="Cidade" />
         <Select name="funcao" defaultValue={filters.funcao ?? ""} aria-label="Função">
           <option value="">Todas as funções</option>
           {roles.map((r) => (
@@ -73,7 +72,8 @@ export default async function TalentPage({
         <Button type="submit">Buscar</Button>
       </form>
 
-      <p className="mb-3 mt-6 text-sm text-ink-3">
+      <div className="min-w-0">
+      <p className="mb-3 text-sm text-ink-3">
         {results.length} {results.length === 1 ? "profissional" : "profissionais"}
       </p>
       {results.length === 0 ? (
@@ -81,7 +81,7 @@ export default async function TalentPage({
           Publicar uma oportunidade costuma trazer mais gente do que buscar: avisamos todos da região.
         </EmptyState>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
           {results.map((f) => {
             const days = [...new Set(f.availability.map((a) => a.weekday!))].sort((x, y) => ((x + 6) % 7) - ((y + 6) % 7));
             return (
@@ -108,6 +108,8 @@ export default async function TalentPage({
           })}
         </ul>
       )}
+      </div>
+      </div>
     </div>
   );
 }

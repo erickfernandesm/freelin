@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/server/auth/session";
 import { homeFor } from "@/server/auth/token";
-import { listCities, listRoles } from "@/server/services/catalog.service";
+import { listRoles } from "@/server/services/catalog.service";
 import { contractorFormInitial, freelancerFormInitial } from "@/server/services/forms";
 import { Logo } from "@/components/brand";
 import { ContractorProfileForm } from "@/components/forms/contractor-profile-form";
@@ -15,8 +15,6 @@ export default async function OnboardingPage() {
   if (!user) redirect("/entrar");
   if (user.onboardedAt || user.role === "ADMIN") redirect(homeFor(user.role));
 
-  const cities = await listCities();
-
   return (
     <div className="min-h-dvh bg-paper">
       <header className="mx-auto flex h-16 max-w-xl items-center px-5">
@@ -27,14 +25,13 @@ export default async function OnboardingPage() {
           <FreelancerProfileForm
             mode="onboarding"
             initial={await freelancerFormInitial(user.id)}
-            cities={cities}
             roles={await listRoles()}
           />
         ) : (
           <>
             <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.02em]">Conte quem está contratando</h1>
             <p className="mb-8 mt-1 text-ink-2">Freelancers escolhem com mais confiança quando conhecem quem contrata.</p>
-            <ContractorProfileForm mode="onboarding" initial={await contractorFormInitial(user.id)} cities={cities} />
+            <ContractorProfileForm mode="onboarding" initial={await contractorFormInitial(user.id)} />
           </>
         )}
       </main>

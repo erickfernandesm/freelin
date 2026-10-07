@@ -1,6 +1,6 @@
 /**
  * Máquinas de estado de candidatura e contratação.
- * Toda mudança de status passa por aqui, nos serviços — nunca nos componentes.
+ * Toda mudança de status passa por aqui, nos serviços, nunca nos componentes.
  */
 import type { ApplicationStatus, ContractStatus } from "./types.ts";
 

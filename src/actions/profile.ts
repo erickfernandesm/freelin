@@ -9,7 +9,6 @@ import {
   contractorProfileSchema,
   fieldErrors,
   freelancerProfileSchema,
-  moneyToCents,
 } from "@/lib/validation";
 import { formJSON, formString, run, type ActionState } from "./_run";
 
@@ -27,8 +26,6 @@ function readAvatar(form: FormData): string | null | undefined {
 
 export async function saveFreelancerProfileAction(_: ActionState, form: FormData): Promise<ActionState> {
   const onboarding = form.get("onboarding") === "1";
-  const rateMin = moneyToCents.safeParse(formString(form, "rateMin"));
-  const rateMax = moneyToCents.safeParse(formString(form, "rateMax"));
   const parsed = freelancerProfileSchema.safeParse({
     name: form.get("name"),
     phone: formString(form, "phone"),
@@ -42,8 +39,6 @@ export async function saveFreelancerProfileAction(_: ActionState, form: FormData
     experienceYears: formString(form, "experienceYears"),
     experienceDescription: formString(form, "experienceDescription"),
     skills: formJSON<string[]>(form, "skills", []),
-    rateMinCents: rateMin.success ? rateMin.data : undefined,
-    rateMaxCents: rateMax.success ? rateMax.data : undefined,
     availability: formJSON(form, "availability", []),
   });
   if (!parsed.success) return { ok: false, fieldErrors: fieldErrors(parsed.error), error: "Revise os campos destacados." };
@@ -69,7 +64,7 @@ export async function saveContractorProfileAction(_: ActionState, form: FormData
     segment: form.get("segment") ?? "",
     description: formString(form, "description"),
     cityId: form.get("cityId") ?? "",
-    contactPhone: formString(form, "contactPhone"),
+    contactPhone: form.get("contactPhone") ?? "",
     contactEmail: formString(form, "contactEmail") ?? "",
     instagram: formString(form, "instagram"),
   });

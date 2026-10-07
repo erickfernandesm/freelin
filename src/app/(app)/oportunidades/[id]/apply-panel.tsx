@@ -82,8 +82,8 @@ export function ApplyPanel({
   }
 
   return (
-    <div className="fixed inset-x-0 bottom-16 z-30 border-t border-line bg-paper/95 p-4 backdrop-blur md:static md:mt-8 md:rounded-3xl md:border-0 md:p-5 md:ring-1 md:ring-line">
-      <div className="mx-auto max-w-2xl">{content}</div>
+    <div className="fixed inset-x-0 bottom-16 z-30 border-t border-line bg-paper/95 p-4 backdrop-blur lg:static lg:rounded-3xl lg:border-0 lg:bg-paper lg:p-5 lg:ring-1 lg:ring-line">
+      <div className="mx-auto max-w-2xl lg:max-w-none">{content}</div>
     </div>
   );
 }

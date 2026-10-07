@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MapPin, Users, Zap } from "lucide-react";
 import { AGENDA_FIT_LABEL, APPLICATION_STATUS, OPPORTUNITY_TYPE_LABEL } from "@/lib/constants";
-import { cn, dateStub, dayLabel, money, plural, timeRange, weekdaysLabel } from "@/lib/format";
+import { cn, dateStub, dayLabel, money, payDetail, plural, timeRange, weekdaysLabel } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 
 export type TicketData = {
@@ -57,7 +57,7 @@ export function OpportunityTicket({
   const body = (
     <article
       className={cn(
-        "group flex overflow-hidden rounded-ticket bg-paper ring-1 transition-[box-shadow,transform] duration-200",
+        "group flex h-full overflow-hidden rounded-ticket bg-paper ring-1 transition-[box-shadow,transform] duration-200",
         t.urgent ? "ring-signal shadow-[0_0_0_3px_var(--color-signal-50)]" : "ring-line/80",
         href && "hover:shadow-lift active:scale-[0.995]",
       )}
@@ -93,10 +93,8 @@ export function OpportunityTicket({
           </div>
           <div className="shrink-0 text-right">
             <div className="text-lg font-extrabold leading-tight text-ink tabular">{money(t.payCents)}</div>
-            {t.payCents != null && t.payUnit !== "TOTAL" && (
-              <div className="text-xs font-medium text-ink-3">
-                {t.payUnit === "HOUR" ? "por hora" : t.payUnit === "MONTH" ? "por mês" : "por diária"}
-              </div>
+            {t.payCents != null && (
+              <div className="text-xs font-medium text-ink-3">{payDetail(t.payUnit, t.startTime, t.endTime)}</div>
             )}
           </div>
         </div>
@@ -140,7 +138,7 @@ export function OpportunityTicket({
   );
 
   return href ? (
-    <Link href={href} className="block rounded-ticket">
+    <Link href={href} className="block h-full rounded-ticket">
       {body}
     </Link>
   ) : (

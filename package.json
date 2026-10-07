@@ -5,7 +5,7 @@
   "description": "Freelin — marketplace de oportunidades entre freelancers e contratantes (Juiz de Fora - MG)",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && node scripts/db-setup.mjs && next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test:domain": "node --test tests/domain.test.ts",
@@ -15,7 +15,8 @@
     "db:studio": "prisma studio",
     "cf:build": "opennextjs-cloudflare build",
     "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "db:setup": "node scripts/db-setup.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -3,46 +3,22 @@
  * e contas de demonstração. Rodar com: npm run db:seed
  * Senha de todas as contas demo: freelin123
  */
+import { readFileSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "../src/server/auth/password.ts";
 
 const db = new PrismaClient();
 
-const CITIES: Array<[string, string, number, number]> = [
-  ["Juiz de Fora", "MG", -21.7642, -43.3503],
-  ["Matias Barbosa", "MG", -21.869, -43.3186],
-  ["Santos Dumont", "MG", -21.4569, -43.5525],
-  ["Ewbank da Câmara", "MG", -21.548, -43.507],
-  ["Coronel Pacheco", "MG", -21.589, -43.256],
-  ["Chácara", "MG", -21.673, -43.215],
-  ["Simão Pereira", "MG", -21.963, -43.307],
-  ["Belmiro Braga", "MG", -21.944, -43.415],
-  ["Lima Duarte", "MG", -21.839, -43.793],
-  ["Bicas", "MG", -21.725, -43.06],
-  ["Goianá", "MG", -21.536, -43.196],
-  ["Rio Novo", "MG", -21.4787, -43.1265],
-  ["São João Nepomuceno", "MG", -21.538, -43.011],
-  ["Barbacena", "MG", -21.2214, -43.7703],
-  ["Três Rios", "RJ", -22.117, -43.209],
-];
+// Catálogo completo: municípios do IBGE e funções (mesmos dados do deploy)
+const CITIES: Array<[string, string, number, number]> = JSON.parse(
+  readFileSync(new URL("./data/cidades.json", import.meta.url), "utf8"),
+);
+const ROLES: Array<[string, string]> = JSON.parse(readFileSync(new URL("./data/funcoes.json", import.meta.url), "utf8"));
 
-const ROLES: Array<[string, string]> = [
-  ["Garçom", "🍽️"],
-  ["Bartender", "🍸"],
-  ["Auxiliar de cozinha", "🔪"],
-  ["Cozinheiro", "👨‍🍳"],
-  ["Copeiro", "🥤"],
-  ["Atendente", "🙋"],
-  ["Recepcionista", "🛎️"],
-  ["Operador de caixa", "💳"],
-  ["Promotor", "📣"],
-  ["Auxiliar de eventos", "🎪"],
-  ["Segurança", "🛡️"],
-  ["Fotógrafo", "📸"],
-];
+const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 function slugify(s: string) {
-  return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
 
 function daysFromNow(n: number) {
@@ -60,15 +36,20 @@ async function main() {
     create: { name: "Zona da Mata", state: "MG" },
   });
 
-  const cityIds: Record<string, string> = {};
-  for (const [name, state, lat, lng] of CITIES) {
-    const city = await db.city.upsert({
-      where: { slug: slugify(`${name}-${state}`) },
-      update: { lat, lng },
-      create: { name, state, lat, lng, slug: slugify(`${name}-${state}`), regionId: state === "MG" ? region.id : null },
-    });
-    cityIds[name] = city.id;
+  const rows = CITIES.map(([name, state, lat, lng]) => ({
+    name,
+    state,
+    lat,
+    lng,
+    slug: slugify(`${name}-${state}`),
+    search: normalize(name),
+    regionId: state === "MG" ? region.id : null,
+  }));
+  for (let i = 0; i < rows.length; i += 1000) {
+    await db.city.createMany({ data: rows.slice(i, i + 1000), skipDuplicates: true });
   }
+  const cityIds: Record<string, string> = {};
+  for (const c of await db.city.findMany({ where: { state: "MG" }, select: { id: true, name: true } })) cityIds[c.name] = c.id;
 
   const roleIds: Record<string, string> = {};
   for (const [i, [name, emoji]] of ROLES.entries()) {
@@ -257,7 +238,7 @@ async function main() {
           roleId: roleIds["Garçom"],
           slots: 1,
           cityId: cityIds["Juiz de Fora"],
-          address: "Rua Halfeld, 1000 — Centro",
+          address: "Rua Halfeld, 1000, Centro",
           type: "SINGLE",
           startDate: daysFromNow(0),
           startTime: "18:00",
@@ -272,7 +253,7 @@ async function main() {
           roleId: roleIds["Bartender"],
           slots: 3,
           cityId: cityIds["Juiz de Fora"],
-          address: "Rua Halfeld, 1000 — Centro",
+          address: "Rua Halfeld, 1000, Centro",
           type: "SINGLE",
           startDate: daysFromNow(3),
           startTime: "20:00",
@@ -298,7 +279,7 @@ async function main() {
         },
         {
           contractorId: c2,
-          title: "Auxiliar de cozinha — fins de semana",
+          title: "Auxiliar de cozinha, fins de semana",
           roleId: roleIds["Auxiliar de cozinha"],
           slots: 2,
           cityId: cityIds["Juiz de Fora"],

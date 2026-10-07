@@ -1,21 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
+import { ArrowLeft, Check } from "lucide-react";
 import { saveFreelancerProfileAction } from "@/actions/profile";
 import { AvailabilityEditor } from "@/components/forms/availability-editor";
 import { AvatarPicker } from "@/components/forms/avatar-picker";
-import { ChipGroup, RadioCards } from "@/components/forms/choice";
+import { CityInput, CityMultiInput, type City } from "@/components/forms/city-input";
+import { RadioCards } from "@/components/forms/choice";
 import { TagsInput } from "@/components/forms/tags-input";
 import { Button } from "@/components/ui/button";
-import { Field, FormError, Input, Select, Textarea } from "@/components/ui/field";
+import { Field, FormError, Input, Textarea } from "@/components/ui/field";
 import { useActionForm } from "@/components/use-action-form";
-import { distanceKm } from "@/server/domain/geo";
 import { EXPERIENCE_OPTIONS, TRAVEL_OPTIONS } from "@/lib/constants";
 import type { AvailabilitySlotInput } from "@/lib/validation";
 import { cn } from "@/lib/format";
 
-type City = { id: string; name: string; state: string; lat: number; lng: number };
 type Role = { id: string; name: string; emoji: string | null };
 
 export type FreelancerFormInitial = {
@@ -24,93 +23,112 @@ export type FreelancerFormInitial = {
   avatarUrl: string | null;
   headline: string;
   bio: string;
-  mainCityId: string;
-  workCityIds: string[];
+  mainCity: City | null;
+  workCities: City[];
   travelPreference: string;
   roleIds: string[];
   experienceLevel: string | undefined;
   experienceYears: string;
   experienceDescription: string;
   skills: string[];
-  rateMin: string;
-  rateMax: string;
   availability: AvailabilitySlotInput[];
 };
 
+const MAX_ROLES = 5;
+
 const STEPS = [
-  { title: "Sobre você", text: "Como os contratantes vão te conhecer." },
-  { title: "Onde você trabalha", text: "Você recebe oportunidades destas cidades." },
-  { title: "Sua experiência", text: "Tudo opcional. Sem experiência você também participa de todas as oportunidades." },
-  { title: "Sua agenda", text: "Ajuda a destacar o que combina com você. Não impede nenhuma candidatura." },
+  { id: "sobre", title: "Sobre você", text: "Como os contratantes vão te conhecer." },
+  { id: "regiao", title: "Onde você trabalha", text: "Você recebe oportunidades destas cidades." },
+  { id: "experiencia", title: "Sua experiência", text: "Tudo opcional. Sem experiência você também participa de todas as oportunidades." },
+  { id: "agenda", title: "Sua agenda", text: "Ajuda a destacar o que combina com você. Não impede nenhuma candidatura." },
 ] as const;
+
+const LAST = STEPS.length - 1;
+
+function reachSummary(main: City | null, extra: number, travel?: string) {
+  if (travel === "ANY") return "Você vai ver oportunidades de todas as cidades.";
+  if (!main) return null;
+  const radius = travel === "KM_20" ? " e cidades a até 20 km" : travel === "KM_50" ? " e cidades a até 50 km" : "";
+  const others = extra > 0 ? `, mais ${extra} ${extra === 1 ? "cidade escolhida" : "cidades escolhidas"}` : "";
+  return `Você vai ver oportunidades de ${main.name}${radius}${others}.`;
+}
 
 export function FreelancerProfileForm({
   mode,
   initial,
-  cities,
   roles,
 }: {
   mode: "onboarding" | "edit";
   initial: FreelancerFormInitial;
-  cities: City[];
   roles: Role[];
 }) {
   const { state, pending, onSubmit, fe } = useActionForm(saveFreelancerProfileAction);
+  const onboarding = mode === "onboarding";
   const [step, setStep] = useState(0);
   const [name, setName] = useState(initial.name);
-  const [mainCityId, setMainCityId] = useState(initial.mainCityId || cities.find((c) => c.name === "Juiz de Fora")?.id || "");
-  const [workCityIds, setWorkCityIds] = useState(initial.workCityIds.filter((id) => id !== initial.mainCityId));
+  const [mainCity, setMainCity] = useState<City | null>(initial.mainCity);
+  const [workCities, setWorkCities] = useState<City[]>(initial.workCities.filter((c) => c.id !== initial.mainCity?.id));
   const [travel, setTravel] = useState<string | undefined>(initial.travelPreference || "CHOSEN_CITIES");
-  const [roleIds, setRoleIds] = useState(initial.roleIds);
+  const [roleIds, setRoleIds] = useState(initial.roleIds.slice(0, MAX_ROLES));
   const [level, setLevel] = useState<string | undefined>(initial.experienceLevel);
   const [localError, setLocalError] = useState<string | null>(null);
-
-  const onboarding = mode === "onboarding";
-  const main = cities.find((c) => c.id === mainCityId);
-
-  // Prévia do alcance: o freelancer entende na hora o efeito do deslocamento
-  const reachPreview = useMemo(() => {
-    if (!main) return null;
-    if (travel === "ANY") return cities.length;
-    const radius = travel === "KM_20" ? 20 : travel === "KM_50" ? 50 : 0;
-    return cities.filter(
-      (c) => c.id === main.id || workCityIds.includes(c.id) || (radius > 0 && distanceKm(main, c) <= radius),
-    ).length;
-  }, [main, travel, workCityIds, cities]);
-
-  const visible = (i: number) => !onboarding || step === i;
 
   // Erro do servidor num passo anterior: volta para ele
   useEffect(() => {
     if (!onboarding || !state.fieldErrors) return;
-    const keys = Object.keys(state.fieldErrors);
     const stepOf = (k: string) =>
       ["name", "headline", "bio", "phone"].includes(k) ? 0
       : ["mainCityId", "workCityIds", "travelPreference"].includes(k) ? 1
       : k.startsWith("availability") ? 3
       : 2;
+    const keys = Object.keys(state.fieldErrors);
     if (keys.length) setStep(Math.min(...keys.map(stepOf)));
   }, [state.fieldErrors, onboarding]);
 
+  function validateStep(i: number) {
+    if (i === 0 && name.trim().length < 2) return "Informe seu nome.";
+    if (i === 1 && !mainCity) return "Digite e escolha a cidade onde você mora.";
+    return null;
+  }
+
   function next() {
-    setLocalError(null);
-    if (step === 0 && name.trim().length < 2) return setLocalError("Informe seu nome.");
-    if (step === 1 && !mainCityId) return setLocalError("Escolha sua cidade principal.");
-    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    const err = validateStep(step);
+    setLocalError(err);
+    if (err) return;
+    setStep((s) => Math.min(s + 1, LAST));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  const sectionClass = (i: number) => cn("space-y-5", !visible(i) && "hidden", !onboarding && "rounded-3xl bg-paper p-5 ring-1 ring-line/70 sm:p-6");
+  // No cadastro em etapas, o formulário só é enviado pelo botão final.
+  // Enter ou cliques em outros controles nunca concluem o cadastro antes da hora.
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLElement | null;
+    if (onboarding && (step < LAST || submitter?.dataset.final !== "1")) {
+      e.preventDefault();
+      if (step < LAST) next();
+      return;
+    }
+    onSubmit(e);
+  }
 
-  return (
-    <form onSubmit={onSubmit} noValidate className="space-y-6">
+  const visible = (i: number) => !onboarding || step === i;
+  const sectionClass = (i: number) =>
+    cn(
+      "space-y-5 scroll-mt-24",
+      !visible(i) && "hidden",
+      !onboarding && "rounded-3xl bg-paper p-5 ring-1 ring-line/70 sm:p-7",
+    );
+  const summary = reachSummary(mainCity, workCities.length, travel);
+
+  const form = (
+    <form onSubmit={handleSubmit} noValidate className="min-w-0 space-y-6">
       {onboarding && <input type="hidden" name="onboarding" value="1" />}
 
       {onboarding && (
         <div>
           <div className="flex gap-1.5" aria-hidden>
             {STEPS.map((s, i) => (
-              <div key={s.title} className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= step ? "bg-brand" : "bg-ink/10")} />
+              <div key={s.id} className={cn("h-1.5 flex-1 rounded-full transition-colors", i <= step ? "bg-brand" : "bg-ink/10")} />
             ))}
           </div>
           <p className="mt-5 text-sm font-semibold text-brand">
@@ -124,73 +142,56 @@ export function FreelancerProfileForm({
       <FormError message={localError ?? state.error} />
 
       {/* 1. Sobre você */}
-      <section className={sectionClass(0)}>
+      <section id="sobre" className={sectionClass(0)}>
         {!onboarding && <SectionHead title={STEPS[0].title} text={STEPS[0].text} />}
         <AvatarPicker name={name} current={initial.avatarUrl} />
-        <Field label="Nome" htmlFor="name" error={fe.name}>
-          <Input id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" invalid={!!fe.name} />
-        </Field>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Field label="Nome" htmlFor="name" error={fe.name}>
+            <Input id="name" name="name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" invalid={!!fe.name} />
+          </Field>
+          <Field label="WhatsApp" htmlFor="phone" optional hint="Só aparece para quem te contratar." error={fe.phone}>
+            <Input id="phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" defaultValue={initial.phone} placeholder="(32) 9 0000-0000" />
+          </Field>
+        </div>
         <Field label="Uma frase sobre você" htmlFor="headline" optional hint="Ex.: Bartender e atendimento em eventos" error={fe.headline}>
           <Input id="headline" name="headline" defaultValue={initial.headline} maxLength={80} />
         </Field>
         <Field label="Apresentação" htmlFor="bio" optional hint="Conte o que você gosta de fazer e como trabalha." error={fe.bio}>
           <Textarea id="bio" name="bio" defaultValue={initial.bio} maxLength={800} />
         </Field>
-        <Field label="WhatsApp" htmlFor="phone" optional hint="Só aparece para quem te contratar." error={fe.phone}>
-          <Input id="phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" defaultValue={initial.phone} placeholder="(32) 9 0000-0000" />
-        </Field>
       </section>
 
       {/* 2. Região */}
-      <section id="regiao" className={cn(sectionClass(1), "scroll-mt-24")}>
+      <section id="regiao" className={sectionClass(1)}>
         {!onboarding && <SectionHead title={STEPS[1].title} text={STEPS[1].text} />}
-        <Field label="Cidade onde você mora" htmlFor="mainCityId" error={fe.mainCityId}>
-          <Select id="mainCityId" name="mainCityId" value={mainCityId} onChange={(e) => setMainCityId(e.target.value)} invalid={!!fe.mainCityId}>
-            <option value="">Escolha</option>
-            {cities.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name} - {c.state}
-              </option>
-            ))}
-          </Select>
+        <Field label="Cidade onde você mora" htmlFor="mainCity" error={fe.mainCityId}>
+          <CityInput id="mainCity" name="mainCityId" initial={mainCity} onChange={setMainCity} invalid={!!fe.mainCityId} />
         </Field>
         <Field label="Até onde você se desloca?" error={fe.travelPreference}>
           <RadioCards name="travelPreference" options={TRAVEL_OPTIONS} value={travel} onChange={setTravel} legend="Deslocamento" />
         </Field>
-        <Field label="Outras cidades onde aceita trabalhar" optional>
-          <ChipGroup
+        <Field label="Outras cidades onde aceita trabalhar" optional hint="Digite o nome e escolha na lista.">
+          <CityMultiInput
             name="workCityIds"
-            legend="Outras cidades"
-            selected={workCityIds}
-            onChange={setWorkCityIds}
-            options={cities
-              .filter((c) => c.id !== mainCityId)
-              .map((c) => ({
-                value: c.id,
-                label: c.name,
-                aside: main ? `${Math.round(distanceKm(main, c))} km` : undefined,
-              }))}
+            initial={workCities}
+            near={mainCity?.id}
+            exclude={mainCity ? [mainCity.id] : []}
+            onChange={setWorkCities}
           />
         </Field>
-        {reachPreview != null && (
-          <p className="rounded-2xl bg-brand-50 px-4 py-3 text-[15px] text-brand-700">
-            Você vai ver oportunidades de <strong className="tabular">{reachPreview}</strong>{" "}
-            {reachPreview === 1 ? "cidade" : "cidades"}.
-          </p>
-        )}
+        {summary && <p className="rounded-2xl bg-brand-50 px-4 py-3 text-[15px] text-brand-700">{summary}</p>}
       </section>
 
       {/* 3. Experiência (opcional) */}
-      <section className={sectionClass(2)}>
+      <section id="experiencia" className={sectionClass(2)}>
         {!onboarding && <SectionHead title={STEPS[2].title} text={STEPS[2].text} />}
-        <Field label="Funções que você faz ou quer fazer" optional hint="Ajuda o contratante a te conhecer. Você continua vendo todas as vagas.">
-          <ChipGroup
-            name="roleIds"
-            legend="Funções"
-            selected={roleIds}
-            onChange={setRoleIds}
-            options={roles.map((r) => ({ value: r.id, label: `${r.emoji ? `${r.emoji} ` : ""}${r.name}` }))}
-          />
+        <Field
+          label="Funções que você faz ou quer fazer"
+          optional
+          error={fe.roleIds}
+          hint={`Escolha até ${MAX_ROLES}. Ajuda o contratante a te conhecer; você continua vendo todas as vagas.`}
+        >
+          <RolePicker roles={roles} selected={roleIds} onChange={setRoleIds} />
         </Field>
         <Field label="Experiência" optional>
           <RadioCards name="experienceLevel" options={EXPERIENCE_OPTIONS} value={level} onChange={setLevel} columns={1} allowNone legend="Experiência" />
@@ -208,45 +209,107 @@ export function FreelancerProfileForm({
         <Field label="Habilidades" optional hint="Ex.: Drinks clássicos, caixa, inglês básico">
           <TagsInput name="skills" initial={initial.skills} />
         </Field>
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Valor mínimo por diária" htmlFor="rateMin" optional error={fe.rateMinCents}>
-            <Input id="rateMin" name="rateMin" inputMode="decimal" placeholder="R$ 100" defaultValue={initial.rateMin} />
-          </Field>
-          <Field label="Valor ideal" htmlFor="rateMax" optional error={fe.rateMaxCents}>
-            <Input id="rateMax" name="rateMax" inputMode="decimal" placeholder="R$ 180" defaultValue={initial.rateMax} />
-          </Field>
-        </div>
       </section>
 
       {/* 4. Agenda */}
-      <section className={sectionClass(3)}>
+      <section id="agenda" className={sectionClass(3)}>
         {!onboarding && <SectionHead title={STEPS[3].title} text={STEPS[3].text} />}
         <AvailabilityEditor name="availability" initial={initial.availability} />
       </section>
 
-      {/* Ações */}
-      <div className={cn("flex gap-3", onboarding ? "pt-2" : "sticky bottom-20 z-10 md:bottom-4")}>
+      {/* Ações: botões com key própria para o React nunca reaproveitar o elemento */}
+      <div className={cn("flex gap-3", onboarding ? "pt-2" : "sticky bottom-20 z-10 lg:bottom-4")}>
         {onboarding && step > 0 && (
-          <Button type="button" variant="secondary" size="lg" onClick={() => setStep((s) => s - 1)} aria-label="Voltar">
+          <Button key="back" type="button" variant="secondary" size="lg" onClick={() => setStep((s) => s - 1)} aria-label="Voltar">
             <ArrowLeft className="size-5" />
           </Button>
         )}
-        {onboarding && step < STEPS.length - 1 ? (
-          <Button type="button" size="lg" full onClick={next}>
+        {onboarding && step < LAST ? (
+          <Button key="next" type="button" size="lg" full onClick={next}>
             Continuar
           </Button>
         ) : (
-          <Button type="submit" size="lg" full loading={pending} className={!onboarding ? "shadow-lift" : undefined}>
-            {onboarding ? "Ver oportunidades" : "Salvar alterações"}
+          <Button
+            key="submit"
+            type="submit"
+            data-final="1"
+            size="lg"
+            full
+            loading={pending}
+            className={!onboarding ? "shadow-lift" : undefined}
+            icon={onboarding ? <Check className="size-5" /> : undefined}
+          >
+            {onboarding ? "Concluir cadastro" : "Salvar alterações"}
           </Button>
         )}
       </div>
-      {onboarding && step >= 2 && step < STEPS.length - 1 && (
+      {onboarding && step === 2 && (
         <button type="button" onClick={next} className="w-full text-center text-[15px] font-semibold text-ink-3 hover:text-ink">
           Pular esta etapa
         </button>
       )}
     </form>
+  );
+
+  if (onboarding) return form;
+
+  // Edição no desktop: navegação lateral fixa + formulário
+  return (
+    <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)]">
+      <nav aria-label="Seções do perfil" className="hidden lg:block">
+        <ul className="sticky top-24 space-y-1">
+          {STEPS.map((s) => (
+            <li key={s.id}>
+              <a href={`#${s.id}`} className="block rounded-xl px-3 py-2 text-[15px] font-semibold text-ink-2 hover:bg-paper hover:text-ink">
+                {s.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      {form}
+    </div>
+  );
+}
+
+function RolePicker({ roles, selected, onChange }: { roles: Role[]; selected: string[]; onChange: (ids: string[]) => void }) {
+  const full = selected.length >= MAX_ROLES;
+  return (
+    <fieldset>
+      <legend className="sr-only">Funções</legend>
+      <p className="mb-2.5 text-sm font-semibold text-ink-3 tabular" aria-live="polite">
+        {selected.length} de {MAX_ROLES} escolhidas
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {roles.map((r) => {
+          const on = selected.includes(r.id);
+          const disabled = !on && full;
+          return (
+            <label
+              key={r.id}
+              className={cn(
+                "inline-flex select-none items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold ring-1 ring-inset transition-all",
+                on ? "cursor-pointer bg-brand text-white ring-brand active:scale-[0.97]" : "bg-paper text-ink-2 ring-line",
+                disabled ? "cursor-not-allowed opacity-40" : !on && "cursor-pointer hover:ring-ink-3 active:scale-[0.97]",
+              )}
+            >
+              <input
+                type="checkbox"
+                name="roleIds"
+                value={r.id}
+                checked={on}
+                disabled={disabled}
+                onChange={() => onChange(on ? selected.filter((v) => v !== r.id) : [...selected, r.id])}
+                className="sr-only"
+              />
+              {on && <Check className="size-3.5" strokeWidth={3} aria-hidden />}
+              {r.emoji && <span aria-hidden>{r.emoji}</span>}
+              {r.name}
+            </label>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }
 

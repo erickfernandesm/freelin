@@ -29,7 +29,7 @@ export default async function ContractsPage() {
   ];
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <PageHeader title="Contratações" subtitle="Acompanhe quem você escolheu, conclua e avalie." />
       {contracts.length === 0 ? (
         <EmptyState
@@ -45,7 +45,7 @@ export default async function ContractsPage() {
           .map((g) => (
             <section key={g.title}>
               <SectionTitle count={g.items.length}>{g.title}</SectionTitle>
-              <div className="space-y-3">
+              <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
                 {g.items.map((c) => (
                   <ContractCard key={c.id} c={c} side="contractor" today={today} />
                 ))}

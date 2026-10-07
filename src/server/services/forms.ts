@@ -3,8 +3,6 @@ import type { FreelancerFormInitial } from "@/components/forms/freelancer-profil
 import type { ContractorFormInitial } from "@/components/forms/contractor-profile-form";
 import { availabilityToSlots, getContractorProfileByUser, getFreelancerProfileByUser } from "./profile.service";
 
-const centsToInput = (c: number | null | undefined) => (c == null ? "" : String(c / 100).replace(".", ","));
-
 export async function freelancerFormInitial(userId: string): Promise<FreelancerFormInitial> {
   const p = await getFreelancerProfileByUser(userId);
   if (!p) throw new Error("Perfil inexistente");
@@ -14,16 +12,14 @@ export async function freelancerFormInitial(userId: string): Promise<FreelancerF
     avatarUrl: p.user.avatarUrl,
     headline: p.headline ?? "",
     bio: p.bio ?? "",
-    mainCityId: p.mainCityId ?? "",
-    workCityIds: p.workCities.map((w) => w.cityId),
+    mainCity: p.mainCity ? { id: p.mainCity.id, name: p.mainCity.name, state: p.mainCity.state } : null,
+    workCities: p.workCities.map((w) => w.city),
     travelPreference: p.travelPreference,
     roleIds: p.roles.map((r) => r.roleId),
     experienceLevel: p.experienceLevel ?? undefined,
     experienceYears: p.experienceYears?.toString() ?? "",
     experienceDescription: p.experienceDescription ?? "",
     skills: p.skills,
-    rateMin: centsToInput(p.rateMinCents),
-    rateMax: centsToInput(p.rateMaxCents),
     availability: availabilityToSlots(p.availability),
   };
 }
@@ -36,7 +32,7 @@ export async function contractorFormInitial(userId: string): Promise<ContractorF
     kind: c.kind,
     segment: c.segment,
     description: c.description ?? "",
-    cityId: c.cityId ?? "",
+    city: c.city ? { id: c.city.id, name: c.city.name, state: c.city.state } : null,
     contactPhone: c.contactPhone ?? "",
     contactEmail: c.contactEmail ?? c.user.email,
     instagram: c.instagram ? `@${c.instagram}` : "",

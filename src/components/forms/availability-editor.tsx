@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarPlus, X } from "lucide-react";
 import type { AvailabilitySlotInput } from "@/lib/validation";
-import { cn, shortDate } from "@/lib/format";
+import { cn } from "@/lib/format";
 import { inputClass } from "@/components/ui/field";
 
 const DAYS = [
@@ -17,12 +16,9 @@ const DAYS = [
 ];
 
 type Day = { on: boolean; allDay: boolean; start: string; end: string };
-type DateEntry = { date: string; kind: "AVAILABLE" | "UNAVAILABLE" };
-
 function fromSlots(slots: AvailabilitySlotInput[]) {
   const week: Record<number, Day> = {};
   for (const d of DAYS) week[d.n] = { on: false, allDay: false, start: "18:00", end: "02:00" };
-  const dates: DateEntry[] = [];
   for (const s of slots) {
     if (s.weekday != null && s.kind === "AVAILABLE") {
       week[s.weekday] = {
@@ -31,23 +27,18 @@ function fromSlots(slots: AvailabilitySlotInput[]) {
         start: s.startTime ?? "08:00",
         end: s.endTime ?? "18:00",
       };
-    } else if (s.date) {
-      dates.push({ date: s.date, kind: s.kind });
     }
   }
-  return { week, dates };
+  return { week };
 }
 
 /**
- * Agenda do freelancer. Serve para destacar oportunidades compatíveis —
+ * Agenda semanal do freelancer. Serve para destacar oportunidades compatíveis,
  * nunca para impedir candidatura. Turnos que viram a noite são aceitos (18h às 02h).
  */
 export function AvailabilityEditor({ name, initial }: { name: string; initial: AvailabilitySlotInput[] }) {
   const start = useMemo(() => fromSlots(initial), [initial]);
   const [week, setWeek] = useState(start.week);
-  const [dates, setDates] = useState<DateEntry[]>(start.dates);
-  const [newDate, setNewDate] = useState("");
-  const [newKind, setNewKind] = useState<DateEntry["kind"]>("UNAVAILABLE");
 
   const slots: AvailabilitySlotInput[] = [
     ...DAYS.filter((d) => week[d.n].on).map((d) => ({
@@ -57,7 +48,6 @@ export function AvailabilityEditor({ name, initial }: { name: string; initial: A
       startTime: week[d.n].allDay ? null : week[d.n].start,
       endTime: week[d.n].allDay ? null : week[d.n].end,
     })),
-    ...dates.map((d) => ({ kind: d.kind, weekday: null, date: d.date, startTime: null, endTime: null })),
   ];
 
   const set = (n: number, patch: Partial<Day>) => setWeek((w) => ({ ...w, [n]: { ...w[n], ...patch } }));
@@ -74,7 +64,7 @@ export function AvailabilityEditor({ name, initial }: { name: string; initial: A
       <input type="hidden" name={name} value={JSON.stringify(slots)} />
 
       <div className="flex flex-wrap gap-2">
-        <span className="py-1.5 text-sm font-medium text-ink-3">Atalhos:</span>
+        <span className="py-1.5 text-sm font-medium text-ink-3">Preencher rápido:</span>
         {[
           { label: "Noites de fim de semana", run: () => preset([5, 6], "18:00", "02:00") },
           { label: "Fins de semana, dia todo", run: () => preset([6, 0], null, null) },
@@ -128,7 +118,7 @@ export function AvailabilityEditor({ name, initial }: { name: string; initial: A
                         type="time"
                         value={day.start}
                         onChange={(e) => set(d.n, { start: e.target.value })}
-                        className={cn(inputClass, "w-[7.5rem]! py-2")}
+                        className={cn(inputClass, "w-[8.75rem]! py-2")}
                         aria-label={`${d.label}, início`}
                       />
                       <span className="text-sm text-ink-3">às</span>
@@ -136,7 +126,7 @@ export function AvailabilityEditor({ name, initial }: { name: string; initial: A
                         type="time"
                         value={day.end}
                         onChange={(e) => set(d.n, { end: e.target.value })}
-                        className={cn(inputClass, "w-[7.5rem]! py-2")}
+                        className={cn(inputClass, "w-[8.75rem]! py-2")}
                         aria-label={`${d.label}, término`}
                       />
                     </>
@@ -157,62 +147,6 @@ export function AvailabilityEditor({ name, initial }: { name: string; initial: A
         })}
       </ul>
 
-      <div>
-        <h4 className="text-sm font-semibold">Datas específicas</h4>
-        <p className="mt-0.5 text-sm text-ink-3">Marque um dia em que você está livre ou já tem compromisso.</p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <input
-            type="date"
-            value={newDate}
-            onChange={(e) => setNewDate(e.target.value)}
-            className={cn(inputClass, "w-auto! py-2")}
-            aria-label="Data"
-          />
-          <select
-            value={newKind}
-            onChange={(e) => setNewKind(e.target.value as DateEntry["kind"])}
-            className={cn(inputClass, "w-auto! py-2")}
-            aria-label="Situação na data"
-          >
-            <option value="UNAVAILABLE">Indisponível</option>
-            <option value="AVAILABLE">Disponível</option>
-          </select>
-          <button
-            type="button"
-            disabled={!newDate}
-            onClick={() => {
-              setDates((ds) => [...ds.filter((x) => x.date !== newDate), { date: newDate, kind: newKind }].sort((a, b) => a.date.localeCompare(b.date)));
-              setNewDate("");
-            }}
-            className="inline-flex h-11 items-center gap-1.5 rounded-2xl bg-paper px-4 text-sm font-semibold ring-1 ring-inset ring-line hover:bg-mist disabled:opacity-40"
-          >
-            <CalendarPlus className="size-4" /> Adicionar
-          </button>
-        </div>
-        {dates.length > 0 && (
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {dates.map((d) => (
-              <li
-                key={d.date}
-                className={cn(
-                  "inline-flex items-center gap-2 rounded-full py-1 pl-3 pr-1 text-sm font-semibold",
-                  d.kind === "UNAVAILABLE" ? "bg-warn-50 text-warn" : "bg-ok-50 text-ok",
-                )}
-              >
-                {shortDate(d.date)}, {d.kind === "UNAVAILABLE" ? "indisponível" : "disponível"}
-                <button
-                  type="button"
-                  onClick={() => setDates((ds) => ds.filter((x) => x.date !== d.date))}
-                  className="grid size-6 place-items-center rounded-full hover:bg-black/5"
-                  aria-label="Remover data"
-                >
-                  <X className="size-3.5" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
     </div>
   );
 }

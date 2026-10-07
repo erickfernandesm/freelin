@@ -17,8 +17,8 @@ export default async function ContractorPublicPage({ params }: { params: Promise
   const { profile: p, reputation, criteria, reviews, openOpportunities, totalOpportunities } = await orNotFound(getContractorPublic(id));
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <Card className="p-6">
+    <div className="grid items-start gap-4 lg:grid-cols-[400px_minmax(0,1fr)]">
+      <Card className="p-6 lg:sticky lg:top-24">
         <div className="flex items-center gap-4">
           <Avatar name={p.displayName} src={p.user.avatarUrl} size={80} square={p.kind === "COMPANY"} />
           <div className="min-w-0">
@@ -43,6 +43,7 @@ export default async function ContractorPublicPage({ params }: { params: Promise
         {p.description && <p className="mt-4 whitespace-pre-line leading-relaxed text-ink-2">{p.description}</p>}
       </Card>
 
+      <div className="min-w-0 space-y-4">
       {user.role === "FREELANCER" && openOpportunities.length > 0 && (
         <Card>
           <h2 className="font-bold">Oportunidades abertas</h2>
@@ -93,6 +94,7 @@ export default async function ContractorPublicPage({ params }: { params: Promise
           </>
         )}
       </Card>
+      </div>
     </div>
   );
 }

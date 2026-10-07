@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { SlidersHorizontal, X, Zap } from "lucide-react";
+import { SlidersHorizontal, Sparkles, X, Zap } from "lucide-react";
 import { OPPORTUNITY_TYPES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/field";
@@ -11,10 +11,10 @@ import { cn } from "@/lib/format";
 type Opt = { id: string; name: string };
 
 /**
- * Filtros escolhidos pelo próprio freelancer — preferência de navegação.
+ * Filtros escolhidos pelo próprio freelancer: preferência de navegação.
  * "Mostrar só Bartender" esconde as outras agora, não tira ninguém de nada.
  */
-export function FeedFilters({ cities, roles }: { cities: Opt[]; roles: Opt[] }) {
+export function FeedFilters({ cities, roles, canMatch }: { cities: Opt[]; roles: Opt[]; canMatch: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -23,6 +23,7 @@ export function FeedFilters({ cities, roles }: { cities: Opt[]; roles: Opt[] }) 
 
   const active = ["cidade", "funcao", "tipo", "de", "ate", "valorMin"].filter((k) => params.get(k)).length;
   const urgent = params.get("urgente") === "1";
+  const match = params.get("combina") === "1";
 
   function apply(next: Record<string, string | undefined>) {
     const q = new URLSearchParams(params.toString());
@@ -57,6 +58,20 @@ export function FeedFilters({ cities, roles }: { cities: Opt[]; roles: Opt[] }) 
         >
           <Zap className="size-4" /> Para hoje
         </button>
+        {canMatch && (
+          <button
+            type="button"
+            onClick={() => apply({ combina: match ? undefined : "1" })}
+            aria-pressed={match}
+            title="Mostra só as vagas das suas funções e que cabem na sua agenda"
+            className={cn(
+              "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-sm font-semibold ring-1 ring-inset",
+              match ? "bg-brand text-white ring-brand" : "bg-paper text-ink ring-line",
+            )}
+          >
+            <Sparkles className="size-4" /> Só as que combinam comigo
+          </button>
+        )}
         {OPPORTUNITY_TYPES.map((t) => {
           const on = params.get("tipo") === t.value;
           return (
@@ -78,7 +93,7 @@ export function FeedFilters({ cities, roles }: { cities: Opt[]; roles: Opt[] }) 
 
       {open && (
         <form
-          className="mt-3 grid gap-4 rounded-3xl bg-paper p-5 ring-1 ring-line animate-pop sm:grid-cols-2"
+          className="mt-3 grid gap-4 rounded-3xl bg-paper p-5 ring-1 ring-line animate-pop sm:grid-cols-2 xl:grid-cols-6"
           onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
@@ -94,7 +109,7 @@ export function FeedFilters({ cities, roles }: { cities: Opt[]; roles: Opt[] }) 
         >
           <Field label="Cidade" htmlFor="f-cidade">
             <Select id="f-cidade" name="cidade" defaultValue={params.get("cidade") ?? ""}>
-              <option value="">Todas da minha região</option>
+              <option value="">Todas as cidades</option>
               {cities.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -102,7 +117,7 @@ export function FeedFilters({ cities, roles }: { cities: Opt[]; roles: Opt[] }) 
               ))}
             </Select>
           </Field>
-          <Field label="Função" htmlFor="f-funcao" hint="Só filtra o que você vê agora.">
+          <Field label="Função" htmlFor="f-funcao">
             <Select id="f-funcao" name="funcao" defaultValue={params.get("funcao") ?? ""}>
               <option value="">Todas</option>
               {roles.map((r) => (
@@ -121,7 +136,7 @@ export function FeedFilters({ cities, roles }: { cities: Opt[]; roles: Opt[] }) 
           <Field label="Valor mínimo (R$)" htmlFor="f-valor">
             <Input id="f-valor" name="valorMin" type="number" min={0} inputMode="numeric" defaultValue={params.get("valorMin") ?? ""} />
           </Field>
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-2 sm:col-span-2 xl:col-span-1">
             <Button type="submit" full>
               Aplicar
             </Button>

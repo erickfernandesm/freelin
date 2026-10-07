@@ -27,7 +27,7 @@ export function Logo({
     />
   );
   return href ? (
-    <Link href={href} aria-label="Freelin — início" className="inline-flex">
+    <Link href={href} aria-label="Freelin, página inicial" className="inline-flex">
       {img}
     </Link>
   ) : (

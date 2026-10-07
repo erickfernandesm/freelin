@@ -4,7 +4,7 @@ import type { getFreelancerPublic } from "@/server/services/profile.service";
 import { EXPERIENCE_LABEL, TRAVEL_OPTIONS } from "@/lib/constants";
 import { FREELANCER_CRITERIA } from "@/server/domain/reviews";
 import { dateToISO } from "@/server/domain/time";
-import { money, relativeTime, shortDate, timeRange } from "@/lib/format";
+import { relativeTime, shortDate, timeRange } from "@/lib/format";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, ReputationLine, Star } from "@/components/ui/misc";
@@ -21,9 +21,10 @@ export function FreelancerProfileView({ data, actions }: { data: Data; actions?:
   const weekly = p.availability.filter((a) => a.kind === "AVAILABLE" && a.weekday != null).sort((a, b) => ((a.weekday! + 6) % 7) - ((b.weekday! + 6) % 7));
 
   return (
-    <div className="space-y-4">
+    <div className="grid items-start gap-4 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)]">
+      <div className="space-y-4 lg:sticky lg:top-24">
       <Card className="p-6">
-        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center lg:flex-col lg:items-start">
           <Avatar name={p.user.name} src={p.user.avatarUrl} size={88} />
           <div className="min-w-0 flex-1">
             <h1 className="text-[26px] font-extrabold leading-tight tracking-[-0.02em]">{p.user.name}</h1>
@@ -50,7 +51,7 @@ export function FreelancerProfileView({ data, actions }: { data: Data; actions?:
         {p.bio && <p className="mt-5 whitespace-pre-line leading-relaxed text-ink-2">{p.bio}</p>}
       </Card>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
         <Card>
           <h2 className="font-bold">Onde trabalha</h2>
           <ul className="mt-3 space-y-2 text-[15px] text-ink-2">
@@ -89,19 +90,12 @@ export function FreelancerProfileView({ data, actions }: { data: Data; actions?:
               ))}
             </ul>
           )}
-          {(p.rateMinCents || p.rateMaxCents) && (
-            <p className="mt-3 border-t border-line pt-3 text-sm text-ink-2">
-              Valor por diária:{" "}
-              <strong className="text-ink">
-                {p.rateMinCents && p.rateMaxCents
-                  ? `${money(p.rateMinCents)} a ${money(p.rateMaxCents)}`
-                  : money(p.rateMinCents ?? p.rateMaxCents)}
-              </strong>
-            </p>
-          )}
         </Card>
       </div>
 
+      </div>
+
+      <div className="min-w-0 space-y-4">
       {(p.skills.length > 0 || p.experienceDescription) && (
         <Card>
           <h2 className="font-bold">Experiência e habilidades</h2>
@@ -179,6 +173,7 @@ export function FreelancerProfileView({ data, actions }: { data: Data; actions?:
           </ul>
         )}
       </Card>
+      </div>
     </div>
   );
 }

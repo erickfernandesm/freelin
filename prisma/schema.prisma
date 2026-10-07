@@ -1,4 +1,4 @@
-// Freelin — modelo de dados
+// Freelin: modelo de dados
 // Cadeia de confiança: Opportunity → Application → Contract → Review
 // A reputação (nota e trabalhos realizados) é sempre calculada a partir
 // de contratações concluídas e avaliações vinculadas a elas.
@@ -50,8 +50,8 @@ model User {
 }
 
 // ─────────────────────────────── Geografia ───────────────────────────────
-// No MVP a distribuição usa cidade + distância entre centros de cidade.
-// lat/lng permitem evoluir para geolocalização real sem mudar o modelo.
+// Base completa de municípios (IBGE). A distribuição usa cidade + distância
+// entre centros de cidade; lat/lng permitem evoluir para geolocalização real.
 
 model Region {
   id     String @id @default(cuid())
@@ -65,6 +65,8 @@ model City {
   name     String
   state    String  @db.Char(2)
   slug     String  @unique
+  // Nome normalizado (minúsculo, sem acento) para busca
+  search   String?
   lat      Float
   lng      Float
   active   Boolean @default(true)
@@ -78,6 +80,7 @@ model City {
 
   @@unique([name, state])
   @@index([active])
+  @@index([search])
 }
 
 // ─────────────────────────────── Freelancer ───────────────────────────────
@@ -249,6 +252,9 @@ model Opportunity {
   description    String            @db.Text
   requirements   String?           @db.Text
   urgent         Boolean           @default(false)
+  // Alcance definido pelo contratante: null = regra padrão do freelancer,
+  // 0 = só quem mora na cidade, N = quem mora a até N km do local
+  reachKm        Int?
   status         OpportunityStatus @default(OPEN)
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt

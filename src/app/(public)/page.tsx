@@ -1,7 +1,9 @@
-import { BadgeCheck, MapPin, Sprout } from "lucide-react";
+import Link from "next/link";
+import { BadgeCheck, Lock, MapPin, Sprout, Zap } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { OpportunityTicket, type TicketData } from "@/components/opportunity-ticket";
 import { ButtonLink } from "@/components/ui/button";
+import { listPublicOpportunities } from "@/server/services/opportunity.service";
 import { todayLocalISO } from "@/lib/format";
 
 function sampleDate(offset: number) {
@@ -60,10 +62,22 @@ const SAMPLES: TicketData[] = [
   },
 ];
 
-export default function Landing() {
+// Vitrine atualizada a cada minuto, sem depender de quem está visitando
+export const revalidate = 60;
+
+async function loadOpenings() {
+  try {
+    return await listPublicOpportunities(6);
+  } catch {
+    return [];
+  }
+}
+
+export default async function Landing() {
+  const openings = await loadOpenings();
   return (
     <div className="overflow-x-hidden bg-paper">
-      <header className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+      <header className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
         <Logo height={28} />
         <nav className="flex items-center gap-2">
           <ButtonLink href="/entrar" variant="ghost" size="sm">
@@ -76,7 +90,7 @@ export default function Landing() {
       </header>
 
       {/* Hero: o produto real em primeiro plano */}
-      <section className="mx-auto grid max-w-6xl gap-10 px-5 pb-16 pt-8 md:grid-cols-[1.05fr_1fr] md:items-center md:pt-16">
+      <section className="mx-auto grid max-w-7xl gap-10 px-5 pb-16 pt-8 md:grid-cols-[1.05fr_1fr] md:items-center md:pt-16">
         <div>
           <p className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-sm font-semibold text-brand-700">
             <MapPin className="size-4" /> Juiz de Fora e região
@@ -96,7 +110,7 @@ export default function Landing() {
               Quero contratar
             </ButtonLink>
           </div>
-          <p className="mt-4 text-sm text-ink-3">Gratuito para freelancers. Sempre.</p>
+          <p className="mt-4 text-sm text-ink-3">Gratuito para freelancers e contratantes. Sempre.</p>
         </div>
 
         <div className="relative">
@@ -111,9 +125,56 @@ export default function Landing() {
         </div>
       </section>
 
+      {openings.length > 0 && (
+        <section id="vagas" className="mx-auto max-w-7xl px-5 pb-20">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+            <div>
+              <h2 className="text-3xl font-extrabold leading-tight tracking-[-0.02em]">Oportunidades abertas agora</h2>
+              <p className="mt-1.5 text-lg text-ink-2">Vagas reais publicadas por contratantes da região.</p>
+            </div>
+            <ButtonLink href="/cadastro?perfil=freelancer" variant="secondary" icon={<Lock className="size-4" />}>
+              Criar conta para se candidatar
+            </ButtonLink>
+          </div>
+          <div className="mt-8 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {openings.map((o) => (
+              <OpportunityTicket
+                key={o.id}
+                href="/cadastro?perfil=freelancer"
+                t={{
+                  id: o.id,
+                  title: o.title,
+                  type: o.type,
+                  urgent: o.urgent,
+                  startDateISO: o.startDateISO,
+                  endDateISO: o.endDateISO,
+                  recurrenceDays: o.recurrenceDays,
+                  startTime: o.startTime,
+                  endTime: o.endTime,
+                  payCents: o.payCents,
+                  payUnit: o.payUnit,
+                  cityName: o.city.name,
+                  roleName: o.role?.name,
+                  roleEmoji: o.role?.emoji,
+                  contractorName: o.contractor.displayName,
+                  remaining: o.remaining,
+                  slots: o.slots,
+                }}
+              />
+            ))}
+          </div>
+          <p className="mt-6 text-center text-[15px] text-ink-2">
+            Para demonstrar interesse, crie sua conta grátis.{" "}
+            <Link href="/entrar" className="font-semibold text-brand hover:underline">
+              Já tenho conta
+            </Link>
+          </p>
+        </section>
+      )}
+
       {/* Diferencial: o marketplace é aberto */}
       <section className="border-y border-line bg-mist">
-        <div className="mx-auto grid max-w-6xl gap-8 px-5 py-16 md:grid-cols-3">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 md:grid-cols-3">
           <div className="md:col-span-1">
             <h2 className="text-3xl font-extrabold leading-tight tracking-[-0.02em]">
               A plataforma conecta. Quem contrata decide.
@@ -131,8 +192,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Como funciona — dois caminhos, cada um uma sequência real */}
-      <section className="mx-auto grid max-w-6xl gap-12 px-5 py-20 md:grid-cols-2">
+      {/* Como funciona: dois caminhos, cada um uma sequência real */}
+      <section className="mx-auto grid max-w-7xl gap-12 px-5 py-20 md:grid-cols-2">
         <Steps
           title="Para quem quer trabalhar"
           steps={[
@@ -152,19 +213,29 @@ export default function Landing() {
       </section>
 
       <section className="px-5 pb-20">
-        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 rounded-[2rem] bg-ink px-8 py-10 text-white md:flex-row md:items-center">
-          <div>
-            <h2 className="text-2xl font-extrabold tracking-[-0.02em] sm:text-3xl">Tem vaga para hoje à noite?</h2>
-            <p className="mt-2 text-white/75">Publique como contratação imediata e avisamos quem está na região.</p>
+        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-signal px-8 py-12 md:px-14">
+          <div className="relative z-10 grid items-center gap-8 md:grid-cols-[1fr_auto]">
+            <div>
+              <p className="inline-flex items-center gap-1.5 rounded-full bg-ink/10 px-3 py-1 text-sm font-bold text-ink">
+                <Zap className="size-4 fill-current" /> Contratação imediata
+              </p>
+              <h2 className="mt-4 text-3xl font-extrabold leading-tight tracking-[-0.02em] text-ink sm:text-4xl">
+                Alguém faltou e a casa abre às 18h?
+              </h2>
+              <p className="mt-2 max-w-xl text-lg text-ink/75">
+                Publique a vaga como imediata. Ela vai para o topo e os freelancers da região são avisados na hora.
+              </p>
+            </div>
+            <ButtonLink href="/cadastro?perfil=contratante" variant="ink" size="lg">
+              Publicar oportunidade
+            </ButtonLink>
           </div>
-          <ButtonLink href="/cadastro?perfil=contratante" variant="signal" size="lg">
-            Publicar oportunidade
-          </ButtonLink>
+          <Zap aria-hidden className="absolute -right-10 -top-16 size-72 rotate-12 fill-ink/[0.06] text-transparent" />
         </div>
       </section>
 
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-3 px-5 py-8 text-sm text-ink-3 sm:flex-row sm:items-center">
+        <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-3 px-5 py-8 text-sm text-ink-3 sm:flex-row sm:items-center">
           <Logo height={22} />
           <p>Feito em Juiz de Fora, MG.</p>
         </div>

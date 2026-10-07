@@ -36,7 +36,7 @@ export function ContractCard({
   const firstName = side === "freelancer" ? other.name : other.name.split(" ")[0];
 
   return (
-    <article className="rounded-3xl bg-paper p-4 ring-1 ring-line/70 sm:p-5">
+    <article className="flex h-full flex-col rounded-3xl bg-paper p-4 ring-1 ring-line/70 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-bold leading-snug">{c.opportunity.title}</p>
@@ -75,7 +75,7 @@ export function ContractCard({
         </a>
       )}
 
-      <div className="mt-4 space-y-2">
+      <div className="mt-auto space-y-2 pt-4">
         {/* Em andamento */}
         {c.status === "ACTIVE" && side === "contractor" && (
           <div className="flex flex-col gap-2 sm:flex-row">

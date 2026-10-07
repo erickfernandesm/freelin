@@ -19,7 +19,7 @@ export function Star({ className, filled = true }: { className?: string; filled?
   );
 }
 
-/** Nota + trabalhos — números sempre calculados pela plataforma */
+/** Nota e trabalhos: números sempre calculados pela plataforma */
 export function ReputationLine({
   rating: value,
   jobs,

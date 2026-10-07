@@ -30,7 +30,7 @@ export default async function NotificationsPage() {
   const unread = items.filter((n) => !n.readAt).length;
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="max-w-4xl">
       <PageHeader
         title="Avisos"
         subtitle={unread ? `${unread} ${unread === 1 ? "novo" : "novos"}` : "Tudo em dia"}

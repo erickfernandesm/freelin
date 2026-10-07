@@ -12,7 +12,7 @@ export default async function MyProfilePage() {
   const user = await requireUser("FREELANCER");
   const data = await getFreelancerPublic(user.freelancer!.id);
   return (
-    <div className="mx-auto max-w-2xl">
+    <div>
       <p className="mb-4 text-sm text-ink-3">É assim que os contratantes veem você.</p>
       <FreelancerProfileView
         data={data}
@@ -22,7 +22,7 @@ export default async function MyProfilePage() {
           </ButtonLink>
         }
       />
-      <form action={signOutAction} className="mt-8 md:hidden">
+      <form action={signOutAction} className="mt-8 lg:hidden">
         <button className="flex w-full items-center justify-center gap-2 rounded-2xl py-3 font-semibold text-ink-3 hover:bg-ink/5">
           <LogOut className="size-4" /> Sair da conta
         </button>

@@ -11,14 +11,14 @@ export default async function CoursesPage() {
   await requireUser();
   const courses = await listCourses();
   return (
-    <div className="mx-auto max-w-3xl">
+    <div>
       <PageHeader title="Cursos" subtitle="Aprenda uma função nova e abra mais portas. Os cursos são oferecidos por parceiros." />
       {courses.length === 0 ? (
         <EmptyState icon={<GraduationCap className="size-7" />} title="Cursos chegando em breve">
           Estamos fechando parcerias com escolas da região.
         </EmptyState>
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
           {courses.map((c) => (
             <li key={c.id}>
               <a

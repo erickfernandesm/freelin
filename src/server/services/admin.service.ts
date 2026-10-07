@@ -133,7 +133,7 @@ export async function adminSetReviewHidden(id: string, hidden: boolean) {
 function slugify(s: string) {
   return s
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
@@ -184,4 +184,19 @@ export async function adminCreateCourse(input: {
 
 export async function adminToggleCourse(id: string, active: boolean) {
   await db.course.update({ where: { id }, data: { active } });
+}
+
+export async function adminSearchCities(q?: string) {
+  const term = q?.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+  const [total, inactive, rows] = await Promise.all([
+    db.city.count(),
+    db.city.count({ where: { active: false } }),
+    db.city.findMany({
+      where: term ? { search: { contains: term } } : { OR: [{ active: false }, { opportunities: { some: {} } }] },
+      orderBy: [{ name: "asc" }],
+      take: 30,
+      select: { id: true, name: true, state: true, active: true, _count: { select: { opportunities: true } } },
+    }),
+  ]);
+  return { total, inactive, rows };
 }
