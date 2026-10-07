@@ -47,6 +47,14 @@ export const signInSchema = z.object({
 export const travelPreference = z.enum(["CHOSEN_CITIES", "KM_20", "KM_50", "ANY"]);
 export const experienceLevel = z.enum(["NONE", "INFORMAL", "PROFESSIONAL"]);
 
+/** Só a parte de regiões do perfil (pop-up "Ajustar" das oportunidades) */
+export const regionSchema = z.object({
+  mainCityId: z.string().min(1, "Escolha a cidade onde você mora"),
+  travelPreference,
+  workCityIds: z.array(z.string()).max(30, "Escolha no máximo 30 cidades"),
+});
+export type RegionInput = z.infer<typeof regionSchema>;
+
 export const availabilitySlotSchema = z
   .object({
     kind: z.enum(["AVAILABLE", "UNAVAILABLE"]),

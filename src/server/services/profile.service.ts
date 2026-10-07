@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/server/db";
 import { DomainError, NotFoundError } from "@/server/errors";
 import { isoToDate, dateToISO } from "@/server/domain/time";
-import type { ContractorProfileInput, FreelancerProfileInput } from "@/lib/validation";
+import type { ContractorProfileInput, FreelancerProfileInput, RegionInput } from "@/lib/validation";
 import { contractorReputation, criteriaAverages, freelancerReputation } from "./reputation.service";
 
 const freelancerInclude = {
@@ -89,6 +89,23 @@ export async function saveFreelancerProfile(
         })),
       });
     }
+  });
+}
+
+/** Atualiza só as regiões do freelancer: cidade onde mora, deslocamento e cidades extras */
+export async function saveFreelancerRegion(userId: string, input: RegionInput) {
+  const profile = await db.freelancerProfile.findUnique({ where: { userId }, select: { id: true } });
+  if (!profile) throw new NotFoundError("Perfil");
+  const cityIds = [...new Set([input.mainCityId, ...input.workCityIds])];
+  const validCities = await db.city.count({ where: { id: { in: cityIds }, active: true } });
+  if (validCities !== cityIds.length) throw new DomainError("Escolha as cidades na lista de sugestões.");
+  await db.$transaction(async (tx) => {
+    await tx.freelancerProfile.update({
+      where: { id: profile.id },
+      data: { mainCityId: input.mainCityId, travelPreference: input.travelPreference },
+    });
+    await tx.freelancerCity.deleteMany({ where: { freelancerId: profile.id } });
+    await tx.freelancerCity.createMany({ data: cityIds.map((cityId) => ({ freelancerId: profile.id, cityId })) });
   });
 }
 

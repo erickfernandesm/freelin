@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Compass, MapPin, PartyPopper } from "lucide-react";
+import { Compass, PartyPopper } from "lucide-react";
 import { requireUser } from "@/server/auth/session";
 import { readParams } from "@/server/page";
 import { listRoles } from "@/server/services/catalog.service";
@@ -10,6 +10,7 @@ import { TRAVEL_OPTIONS } from "@/lib/constants";
 import { OpportunityTicket } from "@/components/opportunity-ticket";
 import { ButtonLink } from "@/components/ui/button";
 import { EmptyState, PageHeader } from "@/components/ui/misc";
+import { RegionDialog } from "@/components/region-dialog";
 import { FeedFilters } from "./feed-filters";
 
 export const metadata: Metadata = { title: "Oportunidades" };
@@ -59,11 +60,12 @@ export default async function FeedPage({
       <PageHeader
         title="Oportunidades"
         subtitle={
-          <Link href="/perfil/editar#regiao" className="inline-flex items-center gap-1 hover:text-brand">
-            <MapPin className="size-4" />
-            {regionLabel}
-            <span className="ml-1.5 font-semibold text-brand">Ajustar</span>
-          </Link>
+          <RegionDialog
+            label={regionLabel ?? "Escolher cidades"}
+            travel={location.travel}
+            mainCity={location.mainCity ? { id: location.mainCity.id, name: location.mainCity.name, state: location.mainCity.state } : null}
+            workCities={location.workCities.map((c) => ({ id: c.id, name: c.name, state: c.state }))}
+          />
         }
       />
 

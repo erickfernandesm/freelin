@@ -45,7 +45,7 @@ const STEPS = [
 
 const LAST = STEPS.length - 1;
 
-function reachSummary(main: City | null, extra: number, travel?: string) {
+export function reachSummary(main: City | null, extra: number, travel?: string) {
   if (travel === "ANY") return "Você vai ver oportunidades de todas as cidades.";
   if (!main) return null;
   const radius = travel === "KM_20" ? " e cidades a até 20 km" : travel === "KM_50" ? " e cidades a até 50 km" : "";

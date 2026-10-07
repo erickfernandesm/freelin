@@ -132,7 +132,13 @@ export async function getFeed(userId: string, filters: FeedFilters) {
   return {
     items: ranked,
     configured: isLocationConfigured(location),
-    location: { mainCity: profile.mainCity, travel: profile.travelPreference, extraCities: profile.workCities.length },
+    location: {
+      mainCity: profile.mainCity,
+      travel: profile.travelPreference,
+      // A cidade onde mora também fica em workCities; aqui só contam as escolhidas a mais
+      workCities: profile.workCities.filter((w) => w.cityId !== profile.mainCityId).map((w) => w.city),
+      extraCities: profile.workCities.filter((w) => w.cityId !== profile.mainCityId).length,
+    },
     canMatch: myRoleIds.length > 0 || slots.length > 0,
     filterCities: [...cityMap.values()].sort((a, b) => a.name.localeCompare(b.name)),
     today,

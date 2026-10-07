@@ -4,11 +4,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireActor } from "@/server/auth/session";
 import { DomainError } from "@/server/errors";
-import { saveContractorProfile, saveFreelancerProfile } from "@/server/services/profile.service";
+import { saveContractorProfile, saveFreelancerProfile, saveFreelancerRegion } from "@/server/services/profile.service";
 import {
   contractorProfileSchema,
   fieldErrors,
   freelancerProfileSchema,
+  regionSchema,
 } from "@/lib/validation";
 import { formJSON, formString, run, type ActionState } from "./_run";
 
@@ -81,4 +82,20 @@ export async function saveContractorProfileAction(_: ActionState, form: FormData
   revalidatePath("/", "layout");
   if (onboarding) redirect("/painel?bem-vindo=1");
   return { ok: true, message: "Perfil atualizado." };
+}
+
+export async function saveRegionAction(_: ActionState, form: FormData): Promise<ActionState> {
+  const parsed = regionSchema.safeParse({
+    mainCityId: form.get("mainCityId") ?? "",
+    travelPreference: form.get("travelPreference"),
+    workCityIds: form.getAll("workCityIds").map(String).filter(Boolean),
+  });
+  if (!parsed.success) return { ok: false, fieldErrors: fieldErrors(parsed.error) };
+  return run(async () => {
+    const me = await requireActor("FREELANCER");
+    await saveFreelancerRegion(me.id, parsed.data);
+    revalidatePath("/oportunidades");
+    revalidatePath("/perfil", "layout");
+    return { ok: true, message: "Regiões atualizadas no seu perfil." };
+  });
 }
