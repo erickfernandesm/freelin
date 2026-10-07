@@ -41,8 +41,6 @@ export default async function FeedPage({
           .join(", ") || travelLabel;
   const firstName = user.name.split(" ")[0];
   const hasFilters = Object.keys(filters).length > 0;
-  const urgent = items.filter((i) => i.urgent);
-  const rest = items.filter((i) => !i.urgent);
 
   return (
     <div>
@@ -105,15 +103,9 @@ export default async function FeedPage({
           </EmptyState>
         ) : (
           <>
-            {urgent.length > 0 && (
-              <section aria-label="Contratação imediata" className="mb-6 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-                {urgent.map((o) => (
-                  <Ticket key={o.id} o={o} today={today} />
-                ))}
-              </section>
-            )}
+            {/* Uma grade só: as urgentes vêm primeiro na ordem e se destacam pela cor */}
             <section aria-label="Oportunidades" className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-              {rest.map((o) => (
+              {items.map((o) => (
                 <Ticket key={o.id} o={o} today={today} />
               ))}
             </section>
