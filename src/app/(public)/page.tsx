@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BadgeCheck, Lock, Sprout } from "lucide-react";
+import { BadgeCheck, Bell, LayoutList, Lock, Sprout } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { SiteFooter } from "@/components/site-footer";
 import { OpportunityTicket, type TicketData } from "@/components/opportunity-ticket";
@@ -227,18 +227,28 @@ export default async function Landing() {
               Publicar uma vaga
             </ButtonLink>
           </div>
-          <div className="space-y-3">
-            <div className="ml-auto flex max-w-sm items-start gap-3 rounded-2xl bg-paper p-4 shadow-lift ring-1 ring-line">
-              <Image src="/brand/icon-192.png" alt="" width={36} height={36} className="rounded-full" />
-              <div className="min-w-0 text-sm">
-                <p className="flex items-center justify-between gap-2 font-semibold text-ink">
-                  Freelin <span className="font-normal text-ink-3">agora</span>
-                </p>
-                <p className="mt-0.5 font-semibold text-ink">Contratação imediata: Preciso de um garçom hoje</p>
-                <p className="text-ink-2">Juiz de Fora, vaga para hoje</p>
+          <div className="space-y-6">
+            <figure className="ml-auto max-w-sm">
+              <figcaption className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-3">
+                <Bell className="size-4" /> Aviso no celular do freelancer
+              </figcaption>
+              <div className="flex items-start gap-3 rounded-2xl bg-paper p-4 shadow-lift ring-1 ring-line">
+                <Image src="/brand/icon-192.png" alt="" width={36} height={36} className="rounded-full" />
+                <div className="min-w-0 text-sm">
+                  <p className="flex items-center justify-between gap-2 font-semibold text-ink">
+                    Freelin <span className="font-normal text-ink-3">agora</span>
+                  </p>
+                  <p className="mt-0.5 font-semibold text-ink">Contratação imediata: Preciso de um garçom hoje</p>
+                  <p className="text-ink-2">Juiz de Fora, vaga para hoje</p>
+                </div>
               </div>
-            </div>
-            <OpportunityTicket t={SAMPLES[0]} />
+            </figure>
+            <figure>
+              <figcaption className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-3">
+                <LayoutList className="size-4" /> A vaga no topo do feed de oportunidades
+              </figcaption>
+              <OpportunityTicket t={SAMPLES[0]} />
+            </figure>
           </div>
         </div>
       </section>
