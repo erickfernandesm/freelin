@@ -256,17 +256,7 @@ export function FreelancerProfileForm({
   // Edição no desktop: navegação lateral fixa + formulário
   return (
     <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)]">
-      <nav aria-label="Seções do perfil" className="hidden lg:block">
-        <ul className="sticky top-24 space-y-1">
-          {STEPS.map((s) => (
-            <li key={s.id}>
-              <a href={`#${s.id}`} className="block rounded-xl px-3 py-2 text-[15px] font-semibold text-ink-2 hover:bg-paper hover:text-ink">
-                {s.title}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </nav>
+      <SectionNav />
       {form}
     </div>
   );
@@ -319,5 +309,89 @@ function SectionHead({ title, text }: { title: string; text: string }) {
       <h2 className="text-xl font-bold">{title}</h2>
       <p className="mt-0.5 text-[15px] text-ink-2">{text}</p>
     </div>
+  );
+}
+
+/**
+ * Navegação lateral com indicador de progresso: acompanha a rolagem e
+ * destaca a etapa visível. Clicar leva até a seção.
+ */
+function SectionNav() {
+  const [active, setActive] = useState(0);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const els = STEPS.map((s) => document.getElementById(s.id)).filter((e): e is HTMLElement => !!e);
+    const update = () => {
+      // Etapa ativa: a última cujo topo já passou de ~35% da tela
+      const line = window.innerHeight * 0.35;
+      let current = 0;
+      els.forEach((el, i) => {
+        if (el.getBoundingClientRect().top <= line) current = i;
+      });
+      const atBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+      if (atBottom) current = els.length - 1;
+      setActive(current);
+
+      // Progresso contínuo dentro da etapa atual, para a barra andar suave
+      const el = els[current];
+      const next = els[current + 1];
+      let within = 1;
+      if (el && next && !atBottom) {
+        const start = el.getBoundingClientRect().top;
+        const span = next.getBoundingClientRect().top - start;
+        within = Math.min(1, Math.max(0, (line - start) / span));
+      }
+      setProgress(Math.min(1, (current + within) / (els.length - 1 || 1)));
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  return (
+    <nav aria-label="Seções do perfil" className="hidden lg:block">
+      <div className="sticky top-24">
+        <ol className="relative">
+          {/* trilho e preenchimento, alinhados ao centro das bolinhas */}
+          <span aria-hidden className="absolute bottom-5 left-[15px] top-5 w-0.5 rounded-full bg-line" />
+          <span
+            aria-hidden
+            className="absolute left-[15px] top-5 w-0.5 rounded-full bg-brand transition-[height] duration-150"
+            style={{ height: `calc((100% - 2.5rem) * ${progress})` }}
+          />
+          {STEPS.map((s, i) => {
+            const done = i < active;
+            const current = i === active;
+            return (
+              <li key={s.id} className="relative">
+                <a
+                  href={`#${s.id}`}
+                  aria-current={current ? "step" : undefined}
+                  className={cn(
+                    "flex items-center gap-3 rounded-xl py-2.5 pr-3 text-[15px] font-semibold transition-colors",
+                    current ? "text-ink" : done ? "text-ink-2 hover:text-ink" : "text-ink-3 hover:text-ink",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "relative z-10 grid size-8 shrink-0 place-items-center rounded-full text-sm font-bold ring-4 ring-mist transition-colors tabular",
+                      current ? "bg-brand text-white" : done ? "bg-brand-100 text-brand-700" : "bg-paper text-ink-3",
+                    )}
+                  >
+                    {done ? <Check className="size-4" strokeWidth={3} /> : i + 1}
+                  </span>
+                  {s.title}
+                </a>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </nav>
   );
 }
