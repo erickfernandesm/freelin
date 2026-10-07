@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarClock, MapPin, Navigation } from "lucide-react";
+import { CalendarClock, MapPin, Navigation, Trophy } from "lucide-react";
 import type { getFreelancerPublic } from "@/server/services/profile.service";
 import { EXPERIENCE_LABEL, TRAVEL_OPTIONS } from "@/lib/constants";
 import { FREELANCER_CRITERIA } from "@/server/domain/reviews";
@@ -15,7 +15,7 @@ const WEEK = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 /** Perfil profissional: tudo que ajuda o contratante a decidir, com reputação real */
 export function FreelancerProfileView({ data, actions }: { data: Data; actions?: React.ReactNode }) {
-  const { profile: p, reputation, criteria, history, reviews } = data;
+  const { profile: p, reputation, criteria, history, reviews, courses } = data;
   const travel = TRAVEL_OPTIONS.find((t) => t.value === p.travelPreference);
   const otherCities = p.workCities.filter((w) => w.cityId !== p.mainCityId);
   const weekly = p.availability.filter((a) => a.kind === "AVAILABLE" && a.weekday != null).sort((a, b) => ((a.weekday! + 6) % 7) - ((b.weekday! + 6) % 7));
@@ -30,6 +30,12 @@ export function FreelancerProfileView({ data, actions }: { data: Data; actions?:
             <h1 className="text-[26px] font-extrabold leading-tight tracking-[-0.02em]">{p.user.name}</h1>
             {p.headline && <p className="mt-0.5 text-ink-2">{p.headline}</p>}
             <ReputationLine rating={reputation.rating} jobs={reputation.jobs} reviews={reputation.reviews} className="mt-2" />
+            {courses.length > 0 && (
+              <a href="#cursos" className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-signal-50 px-2.5 py-1 text-xs font-bold text-warn">
+                <Trophy className="size-3.5" />
+                {courses.length} {courses.length === 1 ? "curso Freelin concluído" : "cursos Freelin concluídos"}
+              </a>
+            )}
           </div>
           {actions}
         </div>
@@ -107,6 +113,33 @@ export function FreelancerProfileView({ data, actions }: { data: Data; actions?:
               ))}
             </div>
           )}
+        </Card>
+      )}
+
+      {courses.length > 0 && (
+        <Card>
+          <h2 id="cursos" className="flex scroll-mt-28 items-center gap-2 font-bold">
+            <span className="grid size-8 place-items-center rounded-xl bg-signal text-ink">
+              <Trophy className="size-4" />
+            </span>
+            Cursos concluídos no Freelin
+          </h2>
+          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+            {courses.map((c) => (
+              <li key={c.id} className="flex items-center gap-3 rounded-2xl bg-mist p-3">
+                <span className="text-2xl" aria-hidden>
+                  {c.course.emoji ?? "🎓"}
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold">{c.course.title}</span>
+                  <span className="block truncate text-sm text-ink-3">
+                    {c.course.provider}
+                    {c.completedAt ? `, ${shortDate(dateToISO(c.completedAt))}` : ""}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ul>
         </Card>
       )}
 

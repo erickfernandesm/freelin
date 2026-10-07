@@ -3,6 +3,7 @@ import { db } from "@/server/db";
 import { DomainError, NotFoundError } from "@/server/errors";
 import { isoToDate, dateToISO } from "@/server/domain/time";
 import type { ContractorProfileInput, FreelancerProfileInput, RegionInput } from "@/lib/validation";
+import { completedCourses } from "./course.service";
 import { contractorReputation, criteriaAverages, freelancerReputation } from "./reputation.service";
 
 const freelancerInclude = {
@@ -158,7 +159,7 @@ export async function getFreelancerPublic(profileId: string) {
   });
   if (!profile) throw new NotFoundError("Profissional");
 
-  const [reputation, criteria, history, reviews] = await Promise.all([
+  const [reputation, criteria, history, reviews, courses] = await Promise.all([
     freelancerReputation({ id: profile.id, userId: profile.userId }),
     criteriaAverages(profile.userId),
     db.contract.findMany({
@@ -185,8 +186,10 @@ export async function getFreelancerPublic(profileId: string) {
         contract: { select: { contractor: { select: { displayName: true } }, opportunity: { select: { title: true } } } },
       },
     }),
+    // Troféus: cursos da plataforma concluídos
+    completedCourses(profile.userId),
   ]);
-  return { profile, reputation, criteria, history, reviews };
+  return { profile, reputation, criteria, history, reviews, courses };
 }
 
 export async function getContractorPublic(profileId: string) {

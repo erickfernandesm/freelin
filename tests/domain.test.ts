@@ -7,7 +7,9 @@ import { rankFeed, matchesMyProfile } from "../src/server/domain/ranking.ts";
 import { canMoveApplication, canMoveContract } from "../src/server/domain/transitions.ts";
 import { canReview, validateScores, averageRating } from "../src/server/domain/reviews.ts";
 import { shiftToRange, shiftHours, todayISO } from "../src/server/domain/time.ts";
+import { accessExpiry, certificateCode, courseProgress, hasCourseAccess, nextLesson } from "../src/server/domain/courses.ts";
 import type { AvailabilitySlot, OpportunitySchedule } from "../src/server/domain/types.ts";
+import { coursePrice, videoSource } from "../src/lib/courses.ts";
 
 const jf = { id: "jf", lat: -21.7642, lng: -43.3503 };
 const matias = { id: "matias", lat: -21.869, lng: -43.3186 }; // ~12 km de JF
@@ -136,4 +138,49 @@ test("duração do turno", () => {
   assert.equal(shiftHours("18:00", "00:00"), 6);
   assert.equal(shiftHours("20:00", "03:00"), 7);
   assert.equal(shiftHours(null, "03:00"), null);
+});
+
+// ───────────── Cursos ─────────────
+
+test("acesso ao curso exige inscrição ativa e dentro da validade", () => {
+  const now = new Date("2026-10-07T12:00:00Z");
+  assert.ok(hasCourseAccess({ status: "ACTIVE", expiresAt: null }, now));
+  assert.ok(hasCourseAccess({ status: "ACTIVE", expiresAt: new Date("2026-11-01") }, now));
+  assert.ok(!hasCourseAccess({ status: "ACTIVE", expiresAt: new Date("2026-10-01") }, now));
+  assert.ok(!hasCourseAccess({ status: "PENDING", expiresAt: null }, now));
+  assert.ok(!hasCourseAccess(null, now));
+});
+
+test("assinatura soma um período; renovação antecipada não perde dias", () => {
+  const from = new Date("2026-01-15T00:00:00Z");
+  assert.equal(accessExpiry("ONE_TIME", from), null);
+  assert.equal(accessExpiry("MONTHLY", from)?.toISOString().slice(0, 10), "2026-02-15");
+  assert.equal(accessExpiry("YEARLY", from)?.toISOString().slice(0, 10), "2027-01-15");
+  const current = new Date("2026-01-25T00:00:00Z");
+  assert.equal(accessExpiry("MONTHLY", from, current)?.toISOString().slice(0, 10), "2026-02-25");
+});
+
+test("progresso e próxima aula", () => {
+  assert.deepEqual(courseProgress(4, 1), { done: 1, total: 4, percent: 25, complete: false });
+  assert.equal(courseProgress(4, 4).complete, true);
+  assert.equal(courseProgress(0, 0).complete, false);
+  const lessons = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  assert.equal(nextLesson(lessons, new Set(["a"]))?.id, "b");
+  assert.equal(nextLesson(lessons, new Set(["a", "b", "c"]))?.id, "a");
+});
+
+test("código de certificado legível", () => {
+  const code = certificateCode();
+  assert.match(code, /^[A-Z2-9]{5}-[A-Z2-9]{5}$/);
+  assert.ok(!/[01OI]/.test(code));
+});
+
+test("preço do curso e links de vídeo", () => {
+  assert.equal(coursePrice("FREE", 5000), "Grátis");
+  assert.equal(coursePrice("MONTHLY", 2900).replace(/\s/g, " "), "R$ 29/mês");
+  assert.equal(videoSource("https://youtu.be/abc123")?.src, "https://www.youtube-nocookie.com/embed/abc123");
+  assert.equal(videoSource("https://www.youtube.com/watch?v=xyz&t=3")?.src, "https://www.youtube-nocookie.com/embed/xyz");
+  assert.equal(videoSource("https://vimeo.com/123456789")?.src, "https://player.vimeo.com/video/123456789");
+  assert.equal(videoSource("https://cdn.site/aula.mp4")?.kind, "file");
+  assert.equal(videoSource("nada"), null);
 });

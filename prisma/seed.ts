@@ -61,35 +61,43 @@ async function main() {
     roleIds[name] = role.id;
   }
 
+  // Curso de demonstração da plataforma (local): módulos e aulas sem vídeo
   if ((await db.course.count()) === 0) {
-    await db.course.createMany({
-      data: [
-        {
-          title: "Curso de Bartender",
-          provider: "Coquetelaria X",
-          description: "Aprenda técnicas profissionais de coquetelaria e aumente suas oportunidades em bares e eventos.",
-          url: "https://example.com/curso-bartender",
-          emoji: "🍸",
-          roleId: roleIds["Bartender"],
-          featured: true,
+    await db.course.create({
+      data: {
+        title: "Garçom de eventos: do zero ao primeiro trabalho",
+        provider: "Equipe Freelin",
+        description: "Postura, serviço à francesa e o que esperar no primeiro evento. Curso curto e prático.",
+        emoji: "🍽️",
+        roleId: roleIds["Garçom"],
+        billing: "FREE",
+        workloadHours: 2,
+        featured: true,
+        modules: {
+          create: [
+            {
+              title: "Antes do evento",
+              position: 1,
+              lessons: {
+                create: [
+                  { title: "Como se apresentar", position: 1, durationMin: 8, description: "Roupa, horário de chegada e o que levar." },
+                  { title: "Entendendo o briefing", position: 2, durationMin: 10, description: "Perguntas para fazer ao contratante." },
+                ],
+              },
+            },
+            {
+              title: "Durante o serviço",
+              position: 2,
+              lessons: {
+                create: [
+                  { title: "Serviço à francesa", position: 1, durationMin: 15 },
+                  { title: "Postura e atendimento", position: 2, durationMin: 12 },
+                ],
+              },
+            },
+          ],
         },
-        {
-          title: "Garçom de Eventos",
-          provider: "Escola de Hospitalidade",
-          description: "Serviço à francesa, etiqueta e atendimento em eventos sociais e corporativos.",
-          url: "https://example.com/curso-garcom",
-          emoji: "🍽️",
-          roleId: roleIds["Garçom"],
-        },
-        {
-          title: "Boas práticas na cozinha",
-          provider: "Instituto Gastronomia JF",
-          description: "Higiene, manipulação de alimentos e organização para quem quer trabalhar em cozinhas.",
-          url: "https://example.com/curso-cozinha",
-          emoji: "🔪",
-          roleId: roleIds["Auxiliar de cozinha"],
-        },
-      ],
+      },
     });
   }
 

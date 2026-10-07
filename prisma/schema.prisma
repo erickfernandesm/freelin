@@ -45,6 +45,7 @@ model User {
   notifications   Notification[]
   reviewsWritten  Review[]           @relation("ReviewAuthor")
   reviewsReceived Review[]           @relation("ReviewTarget")
+  enrollments     Enrollment[]
 
   @@index([role, status])
 }
@@ -399,17 +400,101 @@ model Notification {
 }
 
 // ─────────────────────────────── Cursos ───────────────────────────────
+// Dois formatos: curso da plataforma (módulos e aulas aqui dentro) ou
+// vitrine de parceiro (url externa, sem aulas). url preenchida = parceiro.
+
+enum CourseBilling {
+  FREE
+  ONE_TIME
+  MONTHLY
+  YEARLY
+}
+
+enum EnrollmentStatus {
+  PENDING // pediu inscrição, aguardando confirmação do pagamento
+  ACTIVE
+  CANCELLED
+}
 
 model Course {
-  id          String   @id @default(cuid())
+  id                 String        @id @default(cuid())
+  title              String
+  provider           String
+  description        String        @db.Text
+  url                String?
+  emoji              String?
+  roleId             String?
+  role               Role?         @relation(fields: [roleId], references: [id])
+  billing            CourseBilling @default(ONE_TIME)
+  priceCents         Int?
+  workloadHours      Int?
+  certificateEnabled Boolean       @default(true)
+  featured           Boolean       @default(false)
+  active             Boolean       @default(true)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @default(now()) @updatedAt
+
+  modules     CourseModule[]
+  enrollments Enrollment[]
+}
+
+model CourseModule {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  lessons Lesson[]
+
+  @@index([courseId, position])
+}
+
+model Lesson {
+  id          String       @id @default(cuid())
+  moduleId    String
+  module      CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   title       String
-  provider    String
-  description String   @db.Text
-  url         String
-  emoji       String?
-  roleId      String?
-  role        Role?    @relation(fields: [roleId], references: [id])
-  featured    Boolean  @default(false)
-  active      Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  description String?      @db.Text
+  videoUrl    String?
+  durationMin Int?
+  position    Int          @default(0)
+  createdAt   DateTime     @default(now())
+
+  progress LessonProgress[]
+
+  @@index([moduleId, position])
+}
+
+// Acesso de uma pessoa a um curso. Assinaturas usam expiresAt.
+// completedAt + certificateCode = curso concluído (diploma e troféu no perfil).
+model Enrollment {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId        String
+  course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status          EnrollmentStatus @default(PENDING)
+  createdAt       DateTime         @default(now())
+  activatedAt     DateTime?
+  expiresAt       DateTime?
+  completedAt     DateTime?
+  certificateCode String?          @unique
+
+  progress LessonProgress[]
+
+  @@unique([userId, courseId])
+  @@index([courseId, status])
+}
+
+model LessonProgress {
+  enrollmentId String
+  enrollment   Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lessonId     String
+  lesson       Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt  DateTime   @default(now())
+
+  @@id([enrollmentId, lessonId])
+  @@index([lessonId])
 }
