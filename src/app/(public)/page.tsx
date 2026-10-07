@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { BadgeCheck, Lock, Sprout } from "lucide-react";
 import { Logo } from "@/components/brand";
@@ -212,6 +213,36 @@ export default async function Landing() {
         />
       </section>
 
+      {/* Contratação imediata mostrada pelo próprio produto: a vaga e o aviso que chega ao freelancer */}
+      <section className="border-t border-line">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-20 md:grid-cols-2">
+          <div>
+            <h2 className="text-3xl font-extrabold leading-tight tracking-[-0.02em] sm:text-4xl">
+              Alguém faltou e a casa abre às 18h?
+            </h2>
+            <p className="mt-3 max-w-md text-lg leading-relaxed text-ink-2">
+              Marque a vaga como contratação imediata. Ela aparece no topo do feed e quem está na região recebe o aviso na hora.
+            </p>
+            <ButtonLink href="/cadastro?perfil=contratante" className="mt-7" size="lg">
+              Publicar uma vaga
+            </ButtonLink>
+          </div>
+          <div className="space-y-3">
+            <div className="ml-auto flex max-w-sm items-start gap-3 rounded-2xl bg-paper p-4 shadow-lift ring-1 ring-line">
+              <Image src="/brand/icon-192.png" alt="" width={36} height={36} className="rounded-full" />
+              <div className="min-w-0 text-sm">
+                <p className="flex items-center justify-between gap-2 font-semibold text-ink">
+                  Freelin <span className="font-normal text-ink-3">agora</span>
+                </p>
+                <p className="mt-0.5 font-semibold text-ink">Contratação imediata: Preciso de um garçom hoje</p>
+                <p className="text-ink-2">Juiz de Fora, vaga para hoje</p>
+              </div>
+            </div>
+            <OpportunityTicket t={SAMPLES[0]} />
+          </div>
+        </div>
+      </section>
+
       <SiteFooter />
     </div>
   );
@@ -229,9 +260,9 @@ function Point({ icon, title, children }: { icon: React.ReactNode; title: string
 
 function Steps({ title, steps, cta }: { title: string; steps: string[]; cta: { href: string; label: string } }) {
   return (
-    <div>
+    <div className="flex flex-col">
       <h2 className="text-2xl font-extrabold tracking-[-0.02em]">{title}</h2>
-      <ol className="mt-6 space-y-5">
+      <ol className="mb-8 mt-6 space-y-5">
         {steps.map((s, i) => (
           <li key={s} className="flex gap-4">
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-50 text-[15px] font-extrabold text-brand-700 tabular">
@@ -241,7 +272,7 @@ function Steps({ title, steps, cta }: { title: string; steps: string[]; cta: { h
           </li>
         ))}
       </ol>
-      <ButtonLink href={cta.href} variant="secondary" className="mt-8">
+      <ButtonLink href={cta.href} variant="secondary" className="mt-auto self-start">
         {cta.label}
       </ButtonLink>
     </div>
