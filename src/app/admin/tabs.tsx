@@ -9,10 +9,11 @@ const TABS = [
   { href: "/admin/usuarios", label: "Usuários" },
   { href: "/admin/oportunidades", label: "Oportunidades" },
   { href: "/admin/atividade", label: "Atividade" },
-  { href: "/admin/catalogo", label: "Funções, cidades e cursos" },
+  { href: "/admin/cursos", label: "Cursos" },
+  { href: "/admin/catalogo", label: "Funções e cidades" },
 ];
 
-export function AdminTabs() {
+export function AdminTabs({ pendingCourses = 0 }: { pendingCourses?: number }) {
   const path = usePathname();
   return (
     <nav className="-mb-px flex gap-1 overflow-x-auto [scrollbar-width:none]">
@@ -28,6 +29,14 @@ export function AdminTabs() {
             )}
           >
             {t.label}
+            {t.href === "/admin/cursos" && pendingCourses > 0 && (
+              <span
+                className="ml-1.5 rounded-full bg-signal px-1.5 py-0.5 text-[11px] font-bold text-ink tabular"
+                title="Pedidos de inscrição aguardando"
+              >
+                {pendingCourses}
+              </span>
+            )}
           </Link>
         );
       })}

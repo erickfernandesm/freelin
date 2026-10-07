@@ -1,7 +1,9 @@
 import "server-only";
 import type { Prisma, UserRole } from "@prisma/client";
 import { db } from "@/server/db";
-import { DomainError } from "@/server/errors";
+import { DomainError, NotFoundError } from "@/server/errors";
+import { hashPassword } from "@/server/auth/password";
+import { courseProgress } from "@/server/domain/courses";
 
 export async function adminMetrics() {
   const since = new Date(Date.now() - 30 * 86_400_000);
@@ -163,29 +165,6 @@ export async function adminToggleCity(id: string, active: boolean) {
   await db.city.update({ where: { id }, data: { active } });
 }
 
-export async function adminCreateCourse(input: {
-  title: string;
-  provider: string;
-  description: string;
-  url: string;
-  emoji?: string;
-  roleId?: string;
-  featured?: boolean;
-}) {
-  await db.course.create({
-    data: {
-      ...input,
-      emoji: input.emoji || null,
-      roleId: input.roleId || null,
-      featured: !!input.featured,
-    },
-  });
-}
-
-export async function adminToggleCourse(id: string, active: boolean) {
-  await db.course.update({ where: { id }, data: { active } });
-}
-
 export async function adminSearchCities(q?: string) {
   const term = q?.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
   const [total, inactive, rows] = await Promise.all([
@@ -199,4 +178,232 @@ export async function adminSearchCities(q?: string) {
     }),
   ]);
   return { total, inactive, rows };
+}
+
+// ───────────── Usuário (detalhe e edição) ─────────────
+
+/** Tudo sobre uma conta: dados, avaliações, trabalhos, vagas, candidaturas e cursos */
+export async function adminGetUser(id: string) {
+  const user = await db.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      status: true,
+      avatarUrl: true,
+      onboardedAt: true,
+      createdAt: true,
+      updatedAt: true,
+      freelancer: { select: { id: true, headline: true, bio: true, mainCity: { select: { name: true, state: true } } } },
+      contractor: {
+        select: {
+          id: true,
+          displayName: true,
+          segment: true,
+          description: true,
+          contactPhone: true,
+          contactEmail: true,
+          instagram: true,
+          city: { select: { name: true, state: true } },
+        },
+      },
+    },
+  });
+  if (!user) throw new NotFoundError("Usuário");
+
+  const fid = user.freelancer?.id;
+  const cid = user.contractor?.id;
+  const contractWhere: Prisma.ContractWhereInput = fid ? { freelancerId: fid } : cid ? { contractorId: cid } : { id: "" };
+
+  const [reviewsReceived, reviewsWritten, contracts, opportunities, applications, enrollments] = await Promise.all([
+    db.review.findMany({
+      where: { targetId: id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        overall: true,
+        comment: true,
+        hidden: true,
+        createdAt: true,
+        author: { select: { id: true, name: true } },
+        contract: { select: { opportunity: { select: { title: true } } } },
+      },
+    }),
+    db.review.findMany({
+      where: { authorId: id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        overall: true,
+        comment: true,
+        hidden: true,
+        createdAt: true,
+        target: { select: { id: true, name: true } },
+        contract: { select: { opportunity: { select: { title: true } } } },
+      },
+    }),
+    db.contract.findMany({
+      where: contractWhere,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        status: true,
+        workDate: true,
+        completedAt: true,
+        createdAt: true,
+        opportunity: { select: { title: true } },
+        freelancer: { select: { user: { select: { id: true, name: true } } } },
+        contractor: { select: { displayName: true, userId: true } },
+      },
+    }),
+    cid
+      ? db.opportunity.findMany({
+          where: { contractorId: cid },
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            urgent: true,
+            createdAt: true,
+            city: { select: { name: true } },
+            _count: { select: { applications: true, contracts: true } },
+          },
+        })
+      : [],
+    fid
+      ? db.application.findMany({
+          where: { freelancerId: fid },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+          select: {
+            id: true,
+            status: true,
+            createdAt: true,
+            opportunity: { select: { title: true, contractor: { select: { displayName: true } } } },
+          },
+        })
+      : [],
+    db.enrollment.findMany({
+      where: { userId: id },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        status: true,
+        expiresAt: true,
+        completedAt: true,
+        certificateCode: true,
+        course: { select: { id: true, title: true, emoji: true, modules: { select: { _count: { select: { lessons: true } } } } } },
+        _count: { select: { progress: true } },
+      },
+    }),
+  ]);
+
+  return {
+    user,
+    reviewsReceived,
+    reviewsWritten,
+    contracts,
+    opportunities,
+    applications,
+    enrollments: enrollments.map((e) => ({
+      ...e,
+      progress: courseProgress(
+        e.course.modules.reduce((n, m) => n + m._count.lessons, 0),
+        e._count.progress,
+      ),
+    })),
+  };
+}
+
+export type AdminUserInput = {
+  name: string;
+  email: string;
+  phone?: string;
+  headline?: string;
+  bio?: string;
+  displayName?: string;
+  segment?: string;
+  description?: string;
+  contactPhone?: string;
+  contactEmail?: string;
+  instagram?: string;
+  newPassword?: string;
+};
+
+export async function adminUpdateUser(id: string, input: AdminUserInput) {
+  const email = input.email.toLowerCase().trim();
+  const clash = await db.user.findFirst({ where: { email, NOT: { id } }, select: { id: true } });
+  if (clash) throw new DomainError("Já existe outra conta com esse e-mail.");
+  const user = await db.user.findUnique({
+    where: { id },
+    select: { freelancer: { select: { id: true } }, contractor: { select: { id: true } } },
+  });
+  if (!user) throw new NotFoundError("Usuário");
+  const passwordHash = input.newPassword ? await hashPassword(input.newPassword) : undefined;
+
+  await db.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id },
+      data: { name: input.name, email, phone: input.phone ?? null, ...(passwordHash ? { passwordHash } : {}) },
+    });
+    if (user.freelancer) {
+      await tx.freelancerProfile.update({
+        where: { id: user.freelancer.id },
+        data: { headline: input.headline ?? null, bio: input.bio ?? null },
+      });
+    }
+    if (user.contractor) {
+      await tx.contractorProfile.update({
+        where: { id: user.contractor.id },
+        data: {
+          displayName: input.displayName || input.name,
+          segment: input.segment || "Outro",
+          description: input.description ?? null,
+          contactPhone: input.contactPhone ?? null,
+          contactEmail: input.contactEmail ?? null,
+          instagram: input.instagram?.replace(/^@/, "") ?? null,
+        },
+      });
+    }
+  });
+}
+
+/**
+ * Promove a administrador ou devolve ao perfil de origem (freelancer ou
+ * contratante). A pessoa precisa sair e entrar de novo para a troca valer.
+ */
+export async function adminSetUserRole(actorId: string, id: string, makeAdmin: boolean) {
+  if (actorId === id) throw new DomainError("Você não pode mudar o próprio tipo de conta.");
+  const user = await db.user.findUnique({
+    where: { id },
+    select: { role: true, freelancer: { select: { id: true } }, contractor: { select: { id: true } } },
+  });
+  if (!user) throw new NotFoundError("Usuário");
+  const role: UserRole = makeAdmin ? "ADMIN" : user.freelancer ? "FREELANCER" : user.contractor ? "CONTRACTOR" : "ADMIN";
+  if (!makeAdmin && role === "ADMIN") throw new DomainError("Esta conta não tem perfil de freelancer nem de contratante.");
+  await db.user.update({ where: { id }, data: { role, status: "ACTIVE" } });
+}
+
+/**
+ * Exclusão definitiva. Contratações ligadas à conta (e as avaliações delas)
+ * saem junto, porque o banco não deixa trabalho sem as duas pontas.
+ */
+export async function adminDeleteUser(actorId: string, id: string) {
+  if (actorId === id) throw new DomainError("Você não pode excluir a própria conta.");
+  const user = await db.user.findUnique({
+    where: { id },
+    select: { freelancer: { select: { id: true } }, contractor: { select: { id: true } } },
+  });
+  if (!user) throw new NotFoundError("Usuário");
+  const or: Prisma.ContractWhereInput[] = [];
+  if (user.freelancer) or.push({ freelancerId: user.freelancer.id });
+  if (user.contractor) or.push({ contractorId: user.contractor.id });
+  await db.$transaction(async (tx) => {
+    if (or.length) await tx.contract.deleteMany({ where: { OR: or } });
+    await tx.user.delete({ where: { id } });
+  });
 }

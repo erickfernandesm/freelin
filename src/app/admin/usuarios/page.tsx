@@ -22,6 +22,11 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
 
   return (
     <div>
+      {sp.excluido && (
+        <p className="mb-4 rounded-2xl bg-ok-50 px-4 py-3 text-sm font-semibold text-ok" role="status">
+          Conta excluída.
+        </p>
+      )}
       <form className="mb-5 flex flex-wrap gap-2" role="search">
         <Input name="q" defaultValue={sp.q} placeholder="Nome ou e-mail" className="max-w-xs" aria-label="Buscar" />
         <div className="w-44">
@@ -49,7 +54,6 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
           </thead>
           <tbody className="divide-y divide-line">
             {users.map((u) => {
-              const href = u.freelancer ? `/profissional/${u.freelancer.id}` : u.contractor ? `/contratante/${u.contractor.id}` : null;
               return (
                 <tr key={u.id}>
                   <td className="px-4 py-3">
@@ -57,7 +61,9 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                       <Avatar name={u.contractor?.displayName || u.name} src={u.avatarUrl} size={34} />
                       <div>
                         <p className="font-semibold">
-                          {href ? <Link href={href} className="hover:text-brand">{u.contractor?.displayName || u.name}</Link> : u.name}
+                          <Link href={`/admin/usuarios/${u.id}`} className="hover:text-brand">
+                            {u.contractor?.displayName || u.name}
+                          </Link>
                         </p>
                         <p className="text-ink-3">{u.email}</p>
                       </div>
@@ -71,17 +77,22 @@ export default async function AdminUsers({ searchParams }: { searchParams: Promi
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {u.role !== "ADMIN" && (
-                      <ActionButton
-                        action={adminUserStatusAction}
-                        fields={{ id: u.id, status: u.status === "ACTIVE" ? "BLOCKED" : "ACTIVE" }}
-                        variant={u.status === "ACTIVE" ? "danger" : "secondary"}
-                        size="sm"
-                        confirm={u.status === "ACTIVE" ? `Bloquear ${u.name}? A pessoa perde o acesso imediatamente.` : undefined}
-                      >
-                        {u.status === "ACTIVE" ? "Bloquear" : "Desbloquear"}
-                      </ActionButton>
-                    )}
+                    <div className="flex items-center justify-end gap-2">
+                      <Link href={`/admin/usuarios/${u.id}`} className="rounded-xl px-3 py-2 text-sm font-semibold text-brand hover:bg-brand-50">
+                        Abrir
+                      </Link>
+                      {u.role !== "ADMIN" && (
+                        <ActionButton
+                          action={adminUserStatusAction}
+                          fields={{ id: u.id, status: u.status === "ACTIVE" ? "BLOCKED" : "ACTIVE" }}
+                          variant={u.status === "ACTIVE" ? "danger" : "secondary"}
+                          size="sm"
+                          confirm={u.status === "ACTIVE" ? `Bloquear ${u.name}? A pessoa perde o acesso imediatamente.` : undefined}
+                        >
+                          {u.status === "ACTIVE" ? "Bloquear" : "Desbloquear"}
+                        </ActionButton>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

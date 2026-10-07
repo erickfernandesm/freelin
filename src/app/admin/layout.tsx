@@ -2,11 +2,13 @@ import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { signOutAction } from "@/actions/auth";
 import { requireUser } from "@/server/auth/session";
+import { pendingEnrollmentCount } from "@/server/services/course-admin.service";
 import { Logo } from "@/components/brand";
 import { AdminTabs } from "./tabs";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   await requireUser("ADMIN");
+  const pending = await pendingEnrollmentCount();
   return (
     <div className="min-h-dvh">
       <header className="border-b border-line bg-paper">
@@ -22,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </form>
         </div>
         <div className="mx-auto max-w-6xl px-4">
-          <AdminTabs />
+          <AdminTabs pendingCourses={pending} />
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-8">{children}</main>

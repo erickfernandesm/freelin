@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 import { adminToggleAction } from "@/actions/admin";
-import { listCourses, listRoles } from "@/server/services/catalog.service";
+import { listRoles } from "@/server/services/catalog.service";
 import { adminSearchCities } from "@/server/services/admin.service";
 import { readParams } from "@/server/page";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { ActionButton } from "@/components/action-button";
+import { ShowMore } from "@/components/show-more";
 import { Card } from "@/components/ui/misc";
-import { NewCourseForm, NewRoleForm } from "./forms";
+import { NewRoleForm } from "./forms";
 
-export const metadata: Metadata = { title: "Catálogo" };
+export const metadata: Metadata = { title: "Funções e cidades" };
 
 function Toggle({ kind, id, active }: { kind: string; id: string; active: boolean }) {
   return (
@@ -21,22 +22,21 @@ function Toggle({ kind, id, active }: { kind: string; id: string; active: boolea
 
 export default async function AdminCatalog({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const sp = await readParams(searchParams);
-  const [roles, cities, courses] = await Promise.all([
-    listRoles({ includeInactive: true }),
-    adminSearchCities(sp.cidade),
-    listCourses({ includeInactive: true }),
-  ]);
+  const [roles, cities] = await Promise.all([listRoles({ includeInactive: true }), adminSearchCities(sp.cidade)]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <div className="grid items-start gap-6 lg:grid-cols-2">
       <Card>
         <h2 className="font-bold">Funções</h2>
-        <p className="mt-1 text-sm text-ink-3">Descrevem perfis e oportunidades. Nunca filtram quem pode se candidatar.</p>
+        <p className="mt-1 text-sm text-ink-3">
+          {roles.length} funções. Descrevem perfis e oportunidades, nunca filtram quem pode se candidatar.
+        </p>
         <div className="mt-4">
           <NewRoleForm />
         </div>
-        <ul className="mt-4 divide-y divide-line">
-          {roles.map((r) => (
+        <ShowMore
+          className="mt-4 divide-y divide-line"
+          items={roles.map((r) => (
             <li key={r.id} className={`flex items-center justify-between py-1.5 ${r.active ? "" : "opacity-50"}`}>
               <span className="font-medium">
                 {r.emoji} {r.name}
@@ -44,7 +44,7 @@ export default async function AdminCatalog({ searchParams }: { searchParams: Pro
               <Toggle kind="role" id={r.id} active={r.active} />
             </li>
           ))}
-        </ul>
+        />
       </Card>
 
       <Card>
@@ -59,38 +59,19 @@ export default async function AdminCatalog({ searchParams }: { searchParams: Pro
           </Button>
         </form>
         {!sp.cidade && <p className="mt-3 text-xs text-ink-3">Mostrando cidades com oportunidades ou desativadas.</p>}
-        <ul className="mt-2 divide-y divide-line">
-          {cities.rows.map((c) => (
+        <ShowMore
+          className="mt-2 divide-y divide-line"
+          empty={<p className="mt-4 text-sm text-ink-3">Nenhuma cidade encontrada.</p>}
+          items={cities.rows.map((c) => (
             <li key={c.id} className={`flex items-center justify-between py-1.5 ${c.active ? "" : "opacity-50"}`}>
               <span className="font-medium">
                 {c.name} <span className="text-ink-3">{c.state}</span>
-                {c._count.opportunities > 0 && <span className="ml-2 text-xs text-ink-3">{c._count.opportunities} vagas</span>}
+                {c._count.opportunities > 0 && <span className="ml-2 text-xs text-ink-3">{c._count.opportunities} {c._count.opportunities === 1 ? "vaga" : "vagas"}</span>}
               </span>
               <Toggle kind="city" id={c.id} active={c.active} />
             </li>
           ))}
-        </ul>
-      </Card>
-
-      <Card>
-        <h2 className="font-bold">Cursos</h2>
-        <p className="mt-1 text-sm text-ink-3">Vitrine com links externos de parceiros.</p>
-        <div className="mt-4">
-          <NewCourseForm roles={roles} />
-        </div>
-        <ul className="mt-4 divide-y divide-line">
-          {courses.map((c) => (
-            <li key={c.id} className={`flex items-center justify-between gap-2 py-2 ${c.active ? "" : "opacity-50"}`}>
-              <span className="min-w-0">
-                <span className="block truncate font-medium">
-                  {c.emoji} {c.title}
-                </span>
-                <span className="text-xs text-ink-3">{c.provider}</span>
-              </span>
-              <Toggle kind="course" id={c.id} active={c.active} />
-            </li>
-          ))}
-        </ul>
+        />
       </Card>
     </div>
   );

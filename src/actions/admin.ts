@@ -1,18 +1,20 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireActor } from "@/server/auth/session";
 import {
   adminCreateCity,
-  adminCreateCourse,
   adminCreateRole,
+  adminDeleteUser,
   adminSetOpportunityStatus,
   adminSetReviewHidden,
+  adminSetUserRole,
   adminSetUserStatus,
   adminToggleCity,
-  adminToggleCourse,
   adminToggleRole,
+  adminUpdateUser,
 } from "@/server/services/admin.service";
 import { fieldErrors } from "@/lib/validation";
 import { formString, run, type ActionState } from "./_run";
@@ -82,36 +84,6 @@ export async function adminCreateCityAction(_: ActionState, form: FormData): Pro
   });
 }
 
-const courseSchema = z.object({
-  title: z.string().trim().min(3, "Informe o título").max(80),
-  provider: z.string().trim().min(2, "Informe quem oferece").max(60),
-  description: z.string().trim().min(10, "Descreva o curso").max(400),
-  url: z.string().trim().url("URL inválida"),
-  emoji: z.string().max(4).optional(),
-  roleId: z.string().optional(),
-  featured: z.boolean(),
-});
-
-export async function adminCreateCourseAction(_: ActionState, form: FormData): Promise<ActionState> {
-  const parsed = courseSchema.safeParse({
-    title: form.get("title"),
-    provider: form.get("provider"),
-    description: form.get("description"),
-    url: form.get("url"),
-    emoji: formString(form, "emoji"),
-    roleId: formString(form, "roleId"),
-    featured: form.get("featured") === "on",
-  });
-  if (!parsed.success) return { ok: false, fieldErrors: fieldErrors(parsed.error) };
-  return run(async () => {
-    await admin();
-    await adminCreateCourse(parsed.data);
-    revalidatePath("/admin", "layout");
-    revalidatePath("/cursos");
-    return { ok: true, message: "Curso publicado." };
-  });
-}
-
 export async function adminToggleAction(_: ActionState, form: FormData): Promise<ActionState> {
   return run(async () => {
     await admin();
@@ -120,9 +92,78 @@ export async function adminToggleAction(_: ActionState, form: FormData): Promise
     const kind = form.get("kind");
     if (kind === "role") await adminToggleRole(id, active);
     else if (kind === "city") await adminToggleCity(id, active);
-    else if (kind === "course") await adminToggleCourse(id, active);
     revalidatePath("/admin", "layout");
-    revalidatePath("/cursos");
     return { ok: true, message: active ? "Ativado." : "Desativado." };
   });
+}
+
+// ───────────── Usuário ─────────────
+
+const optional = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max, `Máximo de ${max} caracteres`)
+    .optional()
+    .transform((v) => v || undefined);
+
+const adminUserSchema = z.object({
+  name: z.string().trim().min(2, "Informe o nome").max(80),
+  email: z.string().trim().email("E-mail inválido"),
+  phone: optional(20),
+  headline: optional(80),
+  bio: optional(600),
+  displayName: optional(80),
+  segment: optional(40),
+  description: optional(600),
+  contactPhone: optional(20),
+  contactEmail: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => v || undefined)
+    .pipe(z.string().email("E-mail inválido").optional()),
+  instagram: optional(40),
+  newPassword: z
+    .string()
+    .optional()
+    .transform((v) => v || undefined)
+    .pipe(z.string().min(8, "A senha precisa de pelo menos 8 caracteres").optional()),
+});
+
+export async function adminUpdateUserAction(_: ActionState, form: FormData): Promise<ActionState> {
+  const parsed = adminUserSchema.safeParse(Object.fromEntries(form));
+  if (!parsed.success) return { ok: false, fieldErrors: fieldErrors(parsed.error) };
+  return run(async () => {
+    await admin();
+    const id = String(form.get("id"));
+    await adminUpdateUser(id, parsed.data);
+    revalidatePath(`/admin/usuarios/${id}`);
+    revalidatePath("/admin/usuarios");
+    return { ok: true, message: parsed.data.newPassword ? "Dados e senha atualizados." : "Dados atualizados." };
+  });
+}
+
+export async function adminUserRoleAction(_: ActionState, form: FormData): Promise<ActionState> {
+  return run(async () => {
+    const me = await admin();
+    const id = String(form.get("id"));
+    const makeAdmin = form.get("admin") === "1";
+    await adminSetUserRole(me.id, id, makeAdmin);
+    revalidatePath(`/admin/usuarios/${id}`);
+    return {
+      ok: true,
+      message: makeAdmin ? "Agora é administrador. O painel já aparece no próximo clique da pessoa." : "Voltou a ser uma conta comum.",
+    };
+  });
+}
+
+export async function adminDeleteUserAction(_: ActionState, form: FormData): Promise<ActionState> {
+  const result = await run(async () => {
+    const me = await admin();
+    await adminDeleteUser(me.id, String(form.get("id")));
+    revalidatePath("/admin", "layout");
+  });
+  if (!result.ok) return result;
+  redirect("/admin/usuarios?excluido=1");
 }

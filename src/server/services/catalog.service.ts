@@ -55,11 +55,3 @@ export const listRoles = cache(async (opts: { includeInactive?: boolean } = {}) 
     select: { id: true, name: true, slug: true, emoji: true, active: true },
   }),
 );
-
-export async function listCourses(opts: { includeInactive?: boolean } = {}) {
-  return db.course.findMany({
-    where: opts.includeInactive ? {} : { active: true },
-    orderBy: [{ featured: "desc" }, { createdAt: "desc" }],
-    include: { role: { select: { name: true } } },
-  });
-}

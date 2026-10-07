@@ -122,10 +122,24 @@ Nada disso olha função, experiência, habilidades, nota ou histórico.
 | `/profissional/[id]` | Perfil público do freelancer (reputação real) |
 | `/contratante/[id]` | Perfil público do contratante |
 | `/avisos` | Notificações |
-| `/cursos` | Vitrine de cursos (links externos) |
+| `/cursos` | Cursos: explorar por área, meus cursos (progresso) e meus diplomas |
+| `/cursos/[id]` | Página do curso: grade, preço, inscrição, progresso |
+| `/cursos/[id]/aula/[aula]` | Aula: vídeo, descrição, concluir e seguir |
+
+### Certificado (público)
+| Rota | Tela |
+|---|---|
+| `/certificado/[código]` | Certificado verificável, pronto para imprimir ou salvar em PDF |
 
 ### Admin (`/admin`)
-Métricas, usuários (bloquear/desbloquear), oportunidades (moderar), atividade (candidaturas, contratações, avaliações: ocultar avaliação), catálogo (funções, cidades, cursos).
+Métricas; usuários (detalhe completo, edição de dados e senha, bloquear, tornar admin, excluir); oportunidades (moderar); atividade (ocultar avaliação); cursos (módulos, aulas, cobrança, inscrições); funções e cidades.
+
+### Cursos da plataforma
+- `Course` → `CourseModule` → `Lesson`; `Enrollment` liga pessoa e curso; `LessonProgress` marca aula concluída.
+- Cobrança: grátis, pagamento único, mensal ou anual. Grátis libera na hora; pago vira pedido (`PENDING`) e o admin libera após confirmar o pagamento. Assinatura guarda `expiresAt` e é renovada pelo admin.
+- Concluir a última aula grava `completedAt` e um código de certificado; o curso vira diploma e troféu no perfil do freelancer.
+- Regras puras em `src/server/domain/courses.ts` (acesso, validade, progresso, código), cobertas por testes.
+- Curso com `url` é vitrine de parceiro (link externo, sem aulas).
 
 ### API
 Mutações são **Server Actions** em `src/actions/*` (tipadas, com CSRF nativo do Next). `GET /api/health` para monitoramento. Os serviços em `src/server/services` são a API interna e podem ser expostos como REST (app nativo, integrações) sem reescrever regra.
@@ -136,4 +150,5 @@ Mutações são **Server Actions** em `src/actions/*` (tipadas, com CSRF nativo 
 - **Geolocalização:** `City.lat/lng` + haversine hoje; trocar por coordenadas do endereço/PostGIS sem mudar o contrato do domínio.
 - **Notificações:** `notify()` recebe canais; in-app implementado, push/e-mail/WhatsApp entram como novos canais.
 - **Fotos:** hoje redimensionadas no navegador e salvas inline; `storage` pode apontar para Cloudflare R2.
-- **Monetização:** destaque de vaga, cursos com comissão e planos entram como novas tabelas, sem tocar no fluxo central.
+- **Monetização:** destaque de vaga e planos entram como novas tabelas, sem tocar no fluxo central.
+- **Pagamento de cursos:** hoje o admin libera o acesso manualmente; um checkout (Pix/cartão) só precisa ativar a `Enrollment` pelo webhook, usando `adminActivateEnrollment`.

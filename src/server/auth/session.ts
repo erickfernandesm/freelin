@@ -53,7 +53,8 @@ export const getCurrentUser = cache(async () => {
     },
   });
   if (!user || user.status !== "ACTIVE") return null;
-  return user;
+  // Papel gravado no cookie: pode estar desatualizado se o admin mudou o tipo da conta
+  return { ...user, sessionRole: session.role };
 });
 
 export type CurrentUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
@@ -62,6 +63,8 @@ export type CurrentUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>
 export async function requireUser(role?: SessionRole | SessionRole[]): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/entrar");
+  // Tipo de conta mudou depois do login: renova o cookie antes de seguir
+  if (user.sessionRole !== user.role) redirect("/api/sessao");
   const allowed = role ? (Array.isArray(role) ? role : [role]) : null;
   if (allowed && !allowed.includes(user.role)) redirect(homeFor(user.role));
   if (!user.onboardedAt && user.role !== "ADMIN") redirect("/boas-vindas");
