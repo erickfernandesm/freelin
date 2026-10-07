@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AtSign, MapPin } from "lucide-react";
+import { Instagram, MapPin } from "lucide-react";
 import { requireUser } from "@/server/auth/session";
 import { orNotFound } from "@/server/page";
 import { getContractorPublic } from "@/server/services/profile.service";
@@ -35,7 +35,7 @@ export default async function ContractorPublicPage({ params }: { params: Promise
           )}
           {p.instagram && (
             <a href={`https://instagram.com/${p.instagram}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 hover:text-brand">
-              <AtSign className="size-4 text-brand" /> {p.instagram}
+              <Instagram className="size-4 text-brand" /> @{p.instagram}
             </a>
           )}
           <span>{totalOpportunities} {totalOpportunities === 1 ? "oportunidade publicada" : "oportunidades publicadas"}</span>

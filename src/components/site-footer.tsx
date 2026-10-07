@@ -1,4 +1,4 @@
-import { AtSign, Mail, MessageCircle } from "lucide-react";
+import { Instagram, Mail, MessageCircle } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { CONTACT } from "@/lib/site";
 import { cn } from "@/lib/format";
@@ -13,7 +13,7 @@ export function SiteFooter() {
   const channels = [
     {
       title: "Instagram",
-      icon: AtSign,
+      icon: Instagram,
       href: CONTACT.instagram ? `https://instagram.com/${CONTACT.instagram}` : null,
       label: CONTACT.instagram ? `@${CONTACT.instagram}` : "Instagram",
     },
