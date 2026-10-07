@@ -12,7 +12,7 @@ const figtree = Figtree({
 export const metadata: Metadata = {
   title: { default: "Freelin | Trabalho perto de você", template: "%s · Freelin" },
   description:
-    "Quem procura trabalho encontra oportunidades. Quem precisa de profissionais encontra pessoas disponíveis. Juiz de Fora e região.",
+    "Quem procura trabalho encontra oportunidades. Quem precisa de profissionais encontra pessoas disponíveis.",
   applicationName: "Freelin",
   manifest: "/manifest.webmanifest",
   icons: {
