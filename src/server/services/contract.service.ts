@@ -98,13 +98,13 @@ export async function confirmWorkDone(actor: CurrentUser, contractId: string) {
   if (!isFreelancer) throw new ForbiddenError();
   assertMove(contract.status, "COMPLETED");
   const now = new Date();
-  await db.$transaction([
-    db.contract.update({
+  await db.$transaction(async (tx) => {
+    await tx.contract.update({
       where: { id: contract.id },
       data: { status: "COMPLETED", freelancerConfirmedAt: now, completedAt: now },
-    }),
-    db.application.update({ where: { id: contract.applicationId }, data: { status: "COMPLETED" } }),
-  ]);
+    });
+    await tx.application.update({ where: { id: contract.applicationId }, data: { status: "COMPLETED" } });
+  });
   await notify(contract.contractor.userId, {
     type: "WORK_CONFIRMED",
     title: "Trabalho concluído e confirmado",

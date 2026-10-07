@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  serverExternalPackages: ["@prisma/client", ".prisma/client"],
   // Workers não rodam o otimizador de imagens do Next; assets já saem no tamanho certo
   images: { unoptimized: true },
   experimental: {

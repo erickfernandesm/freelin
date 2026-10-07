@@ -24,6 +24,8 @@
     "node": ">=22.18"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.1",
+    "@prisma/adapter-neon": "^6.16.2",
     "@prisma/client": "^6.16.2",
     "jose": "^6.1.0",
     "lucide-react": "^0.544.0",
@@ -44,5 +46,6 @@
     "tsx": "^4.20.6",
     "typescript": "^5.9.2",
     "wrangler": "^4.40.0"
-  }
+  },
+  "type": "module"
 }

@@ -65,26 +65,13 @@ git push -u origin main
 
 ## Deploy na Cloudflare (Workers + OpenNext)
 
-1. **Banco:** crie um Postgres no [Neon](https://neon.tech) (região São Paulo). Use a URL *pooled* em `DATABASE_URL` e a direta em `DIRECT_URL`. Rode as migrações a partir do seu computador:
-   ```bash
-   DATABASE_URL="..." DIRECT_URL="..." npx prisma migrate deploy
-   DATABASE_URL="..." DIRECT_URL="..." npm run db:seed
-   ```
-2. **Prisma no Workers:** o runtime da Cloudflare precisa de driver adapter. Instale `npm i @prisma/adapter-neon @neondatabase/serverless`, adicione `previewFeatures = ["driverAdapters"]` ao `generator` em `prisma/schema.prisma` e troque a criação do cliente em `src/server/db.ts` por:
-   ```ts
-   import { PrismaNeon } from "@prisma/adapter-neon";
-   export const db = new PrismaClient({ adapter: new PrismaNeon({ connectionString: process.env.DATABASE_URL! }) });
-   ```
-   (Rodando em Node — local ou outro host — o cliente padrão funciona sem mudanças.)
-3. **Segredos:**
-   ```bash
-   npx wrangler login
-   npx wrangler secret put DATABASE_URL
-   npx wrangler secret put AUTH_SECRET
-   ```
-4. **Publicar:** `npm run cf:deploy`. Para testar localmente no runtime da Cloudflare antes: `npm run cf:preview`.
-
-Também dá para conectar o repositório no painel da Cloudflare (Workers → Create → Import a repository) com o comando de build `npx opennextjs-cloudflare build` e deploy `npx opennextjs-cloudflare deploy`.
+1. **Banco:** Postgres no [Neon](https://neon.tech), região São Paulo. O cliente detecta URLs `*.neon.tech` e usa o driver serverless (`@prisma/adapter-neon`), compatível com o runtime da Cloudflare.
+2. **Estrutura e dados iniciais:** `npx prisma migrate deploy` e `npm run db:seed` com a `DATABASE_URL` do Neon, ou rode o SQL de `prisma/migrations/0001_init/migration.sql` no SQL Editor do Neon.
+3. **Projeto na Cloudflare:** Workers & Pages → Create → Import a repository → este repositório.
+   - Build command: `npx opennextjs-cloudflare build`
+   - Deploy command: `npx opennextjs-cloudflare deploy`
+   - Variáveis (build e runtime): `DATABASE_URL`, `AUTH_SECRET`
+4. Pela linha de comando, como alternativa: `npx wrangler secret put DATABASE_URL`, `npx wrangler secret put AUTH_SECRET` e `npm run cf:deploy`.
 
 ## Estrutura
 

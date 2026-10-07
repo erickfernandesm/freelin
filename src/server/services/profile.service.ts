@@ -111,8 +111,8 @@ export async function saveContractorProfile(
 ) {
   const city = await db.city.findFirst({ where: { id: input.cityId, active: true } });
   if (!city) throw new DomainError("Escolha uma cidade válida.");
-  await db.$transaction([
-    db.contractorProfile.update({
+  await db.$transaction(async (tx) => {
+    await tx.contractorProfile.update({
       where: { userId },
       data: {
         displayName: input.displayName,
@@ -124,15 +124,15 @@ export async function saveContractorProfile(
         contactEmail: input.contactEmail ?? null,
         instagram: input.instagram?.replace(/^@/, "") ?? null,
       },
-    }),
-    db.user.update({
+    });
+    await tx.user.update({
       where: { id: userId },
       data: {
         ...(opts.avatarUrl !== undefined ? { avatarUrl: opts.avatarUrl } : {}),
         ...(opts.completeOnboarding ? { onboardedAt: new Date() } : {}),
       },
-    }),
-  ]);
+    });
+  });
 }
 
 /** Perfil público do freelancer — o que o contratante vê para decidir */
