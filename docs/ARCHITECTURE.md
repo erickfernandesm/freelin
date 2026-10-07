@@ -113,7 +113,6 @@ Nada disso olha função, experiência, habilidades, nota ou histórico.
 | `/vagas/nova` | Publicar oportunidade |
 | `/vagas/[id]` | Gerenciar oportunidade e candidatos |
 | `/contratacoes` | Acompanhar, concluir, avaliar, histórico |
-| `/talentos` | Busca de freelancers |
 | `/empresa/editar` | Perfil do contratante |
 
 ### Compartilhado

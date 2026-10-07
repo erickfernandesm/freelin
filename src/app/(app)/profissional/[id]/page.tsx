@@ -34,7 +34,7 @@ export default async function FreelancerPublicPage({
       {application ? (
         <BackLink href={`/vagas/${application.opportunityId}`}>{application.title}</BackLink>
       ) : user.role === "CONTRACTOR" ? (
-        <BackLink href="/talentos">Profissionais</BackLink>
+        <BackLink href="/painel">Painel</BackLink>
       ) : null}
 
       {application && (

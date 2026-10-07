@@ -17,7 +17,6 @@ import {
   LogOut,
   Pencil,
   Plus,
-  Search,
 } from "lucide-react";
 import { signOutAction } from "@/actions/auth";
 import { Avatar } from "@/components/ui/avatar";
@@ -35,7 +34,6 @@ const MAIN: Record<Role, Item[]> = {
   CONTRACTOR: [
     { href: "/painel", label: "Painel", icon: LayoutGrid },
     { href: "/contratacoes", label: "Contratações", short: "Contratados", icon: Handshake },
-    { href: "/talentos", label: "Profissionais", short: "Buscar", icon: Search },
   ],
 };
 
@@ -48,7 +46,6 @@ const MOBILE: Record<Role, Item[]> = {
     MAIN.CONTRACTOR[0],
     MAIN.CONTRACTOR[1],
     { href: "/vagas/nova", label: "Publicar", icon: Plus, primary: true },
-    MAIN.CONTRACTOR[2],
     { href: "/empresa/editar", label: "Perfil", icon: Building2 },
   ],
 };

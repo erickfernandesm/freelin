@@ -13,7 +13,7 @@ export default async function EditContractorPage() {
   const user = await requireUser("CONTRACTOR");
   const initial = await contractorFormInitial(user.id);
   return (
-    <div className="max-w-4xl">
+    <div className="mx-auto max-w-5xl">
       <PageHeader
         title="Seu perfil"
         subtitle={
@@ -27,7 +27,7 @@ export default async function EditContractorPage() {
           </>
         }
       />
-      <Card className="sm:p-6">
+      <Card className="sm:p-8">
         <ContractorProfileForm mode="edit" initial={initial} />
       </Card>
       <form action={signOutAction} className="mt-6 lg:hidden">

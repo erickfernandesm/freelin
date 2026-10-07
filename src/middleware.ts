@@ -11,7 +11,6 @@ const AREAS: Array<{ prefix: string; roles: SessionRole[] }> = [
   { prefix: "/painel", roles: ["CONTRACTOR"] },
   { prefix: "/vagas", roles: ["CONTRACTOR"] },
   { prefix: "/contratacoes", roles: ["CONTRACTOR"] },
-  { prefix: "/talentos", roles: ["CONTRACTOR"] },
   { prefix: "/empresa", roles: ["CONTRACTOR"] },
   { prefix: "/admin", roles: ["ADMIN"] },
   { prefix: "/profissional", roles: ["FREELANCER", "CONTRACTOR", "ADMIN"] },

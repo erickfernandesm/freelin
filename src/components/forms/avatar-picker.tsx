@@ -62,7 +62,7 @@ export function AvatarPicker({
             </button>
           )}
         </div>
-        <p className="text-sm text-ink-3">{error ?? "Uma foto nítida do rosto passa mais confiança."}</p>
+        <p className="text-sm text-ink-3">{error ?? (square ? "Um logo nítido ajuda os freelancers a reconhecerem vocês." : "Uma foto nítida do rosto passa mais confiança.")}</p>
       </div>
       <input
         ref={input}

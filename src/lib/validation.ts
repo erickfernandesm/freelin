@@ -167,17 +167,6 @@ export const reviewSchema = z.object({
   comment: optionalText(600),
 });
 
-export const talentSearchSchema = z.object({
-  cidade: z.string().optional(),
-  funcao: z.string().optional(),
-  experiencia: experienceLevel.optional(),
-  notaMin: z.coerce.number().min(0).max(5).optional(),
-  trabalhosMin: z.coerce.number().int().min(0).optional(),
-  q: z.string().trim().max(60).optional(),
-});
-
-export type TalentSearch = z.infer<typeof talentSearchSchema>;
-
 /** Converte erros do zod em { campo: mensagem } */
 export function fieldErrors(error: z.ZodError): Record<string, string> {
   const out: Record<string, string> = {};
