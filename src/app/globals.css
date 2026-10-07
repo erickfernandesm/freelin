@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+/*
+  Freelin — tokens
+  Azul da marca + tinta (o mesmo azul-marinho do "Free" no logo) sobre branco.
+  O amarelo-sinal é reservado para contratação imediata: é o único grito da interface.
+*/
+@theme {
+  --color-brand: #2c67e8;
+  --color-brand-600: #2257cc;
+  --color-brand-700: #1b47a8;
+  --color-brand-50: #eef3fe;
+  --color-brand-100: #dce7fd;
+
+  --color-ink: #0f1b3d;
+  --color-ink-2: #3b4664;
+  --color-ink-3: #6b7591;
+  --color-line: #e3e8f2;
+  --color-mist: #f4f6fb;
+  --color-paper: #ffffff;
+
+  --color-signal: #ffc933;
+  --color-signal-50: #fff7dc;
+  --color-ok: #10935a;
+  --color-ok-50: #e7f6ee;
+  --color-warn: #b76e00;
+  --color-warn-50: #fff3e0;
+  --color-danger: #d23b3b;
+  --color-danger-50: #fdeeee;
+
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-ticket: 1.25rem;
+  --shadow-lift: 0 1px 0 rgb(15 27 61 / 0.04), 0 6px 20px -8px rgb(15 27 61 / 0.18);
+  --shadow-press: 0 1px 0 rgb(15 27 61 / 0.06);
+
+  --animate-pop: pop 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  --animate-toast: toast-in 220ms ease-out;
+
+  @keyframes pop {
+    0% { transform: scale(0.94); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes toast-in {
+    0% { transform: translateY(12px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-mist text-ink antialiased;
+    font-feature-settings: "ss01", "tnum" 0;
+  }
+  ::selection {
+    background: var(--color-brand-100);
+  }
+  :focus-visible {
+    outline: 2.5px solid var(--color-brand);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

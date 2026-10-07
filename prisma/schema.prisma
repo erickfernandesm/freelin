@@ -1,0 +1,408 @@
+// Freelin — modelo de dados
+// Cadeia de confiança: Opportunity → Application → Contract → Review
+// A reputação (nota e trabalhos realizados) é sempre calculada a partir
+// de contratações concluídas e avaliações vinculadas a elas.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────── Usuários ───────────────────────────────
+
+enum UserRole {
+  FREELANCER
+  CONTRACTOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  name         String
+  role         UserRole
+  status       UserStatus @default(ACTIVE)
+  avatarUrl    String?    @db.Text
+  phone        String?
+  onboardedAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  freelancer      FreelancerProfile?
+  contractor      ContractorProfile?
+  notifications   Notification[]
+  reviewsWritten  Review[]           @relation("ReviewAuthor")
+  reviewsReceived Review[]           @relation("ReviewTarget")
+
+  @@index([role, status])
+}
+
+// ─────────────────────────────── Geografia ───────────────────────────────
+// No MVP a distribuição usa cidade + distância entre centros de cidade.
+// lat/lng permitem evoluir para geolocalização real sem mudar o modelo.
+
+model Region {
+  id     String @id @default(cuid())
+  name   String @unique
+  state  String
+  cities City[]
+}
+
+model City {
+  id       String  @id @default(cuid())
+  name     String
+  state    String  @db.Char(2)
+  slug     String  @unique
+  lat      Float
+  lng      Float
+  active   Boolean @default(true)
+  regionId String?
+  region   Region? @relation(fields: [regionId], references: [id])
+
+  mainForFreelancers FreelancerProfile[] @relation("MainCity")
+  workCities         FreelancerCity[]
+  contractors        ContractorProfile[]
+  opportunities      Opportunity[]
+
+  @@unique([name, state])
+  @@index([active])
+}
+
+// ─────────────────────────────── Freelancer ───────────────────────────────
+
+enum TravelPreference {
+  CHOSEN_CITIES // Somente minhas cidades
+  KM_20
+  KM_50
+  ANY
+}
+
+enum ExperienceLevel {
+  NONE
+  INFORMAL
+  PROFESSIONAL
+}
+
+model FreelancerProfile {
+  id                    String            @id @default(cuid())
+  userId                String            @unique
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  headline              String?
+  bio                   String?           @db.Text
+  mainCityId            String?
+  mainCity              City?             @relation("MainCity", fields: [mainCityId], references: [id])
+  travelPreference      TravelPreference  @default(CHOSEN_CITIES)
+  // Informações profissionais: opcionais e NUNCA usadas para bloquear acesso
+  experienceLevel       ExperienceLevel?
+  experienceYears       Int?
+  experienceDescription String?           @db.Text
+  skills                String[]          @default([])
+  rateMinCents          Int?
+  rateMaxCents          Int?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  workCities   FreelancerCity[]
+  roles        FreelancerRole[]
+  availability Availability[]
+  applications Application[]
+  contracts    Contract[]
+
+  @@index([mainCityId])
+}
+
+model FreelancerCity {
+  freelancerId String
+  cityId       String
+  freelancer   FreelancerProfile @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+  city         City              @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@id([freelancerId, cityId])
+  @@index([cityId])
+}
+
+model Role {
+  id            String           @id @default(cuid())
+  name          String           @unique
+  slug          String           @unique
+  emoji         String?
+  active        Boolean          @default(true)
+  sortOrder     Int              @default(0)
+  freelancers   FreelancerRole[]
+  opportunities Opportunity[]
+  courses       Course[]
+}
+
+model FreelancerRole {
+  freelancerId String
+  roleId       String
+  freelancer   FreelancerProfile @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+  role         Role              @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([freelancerId, roleId])
+  @@index([roleId])
+}
+
+enum AvailabilityKind {
+  AVAILABLE
+  UNAVAILABLE
+}
+
+// Uma linha = um dia da semana recorrente (weekday 0-6) OU uma data específica.
+// Horários em "HH:MM"; end < start significa que atravessa a meia-noite.
+model Availability {
+  id           String            @id @default(cuid())
+  freelancerId String
+  freelancer   FreelancerProfile @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+  kind         AvailabilityKind  @default(AVAILABLE)
+  weekday      Int?
+  date         DateTime?         @db.Date
+  startTime    String?
+  endTime      String?
+
+  @@index([freelancerId])
+}
+
+// ─────────────────────────────── Contratante ───────────────────────────────
+
+enum ContractorKind {
+  COMPANY
+  PERSON
+}
+
+model ContractorProfile {
+  id          String         @id @default(cuid())
+  userId      String         @unique
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind        ContractorKind @default(COMPANY)
+  displayName String
+  segment     String
+  description String?        @db.Text
+  cityId      String?
+  city        City?          @relation(fields: [cityId], references: [id])
+  contactPhone String?
+  contactEmail String?
+  instagram   String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  opportunities Opportunity[]
+  contracts     Contract[]
+}
+
+// ─────────────────────────────── Oportunidades ───────────────────────────────
+
+enum OpportunityType {
+  SINGLE // Evento único
+  RECURRING // Recorrente
+  TEMPORARY // Temporário (período)
+  FIXED // Fixo / contínuo
+}
+
+enum OpportunityStatus {
+  OPEN
+  FILLED
+  CLOSED
+  CANCELLED
+}
+
+enum PayUnit {
+  SHIFT // por diária/turno
+  HOUR
+  MONTH
+  TOTAL
+}
+
+model Opportunity {
+  id             String            @id @default(cuid())
+  contractorId   String
+  contractor     ContractorProfile @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  title          String
+  // Função desejada: descreve o que se procura, nunca filtra candidatos
+  roleId         String?
+  role           Role?             @relation(fields: [roleId], references: [id])
+  slots          Int
+  cityId         String
+  city           City              @relation(fields: [cityId], references: [id])
+  address        String?
+  type           OpportunityType
+  startDate      DateTime?         @db.Date
+  endDate        DateTime?         @db.Date
+  recurrenceDays Int[]             @default([])
+  startTime      String?
+  endTime        String?
+  payCents       Int?
+  payUnit        PayUnit           @default(SHIFT)
+  paymentMethod  String?
+  description    String            @db.Text
+  requirements   String?           @db.Text
+  urgent         Boolean           @default(false)
+  status         OpportunityStatus @default(OPEN)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  applications Application[]
+  contracts    Contract[]
+
+  @@index([status, cityId])
+  @@index([contractorId, status])
+  @@index([startDate])
+}
+
+enum ApplicationStatus {
+  SENT // Enviada
+  VIEWED // Visualizada
+  IN_REVIEW // Em análise
+  SELECTED // Selecionado
+  REJECTED // Recusado
+  CANCELLED // Cancelada
+  COMPLETED // Trabalho concluído
+}
+
+model Application {
+  id            String            @id @default(cuid())
+  opportunityId String
+  opportunity   Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  freelancerId  String
+  freelancer    FreelancerProfile @relation(fields: [freelancerId], references: [id], onDelete: Cascade)
+  status        ApplicationStatus @default(SENT)
+  message       String?           @db.Text
+  viewedAt      DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  contract Contract?
+
+  @@unique([opportunityId, freelancerId])
+  @@index([freelancerId, status])
+}
+
+// ─────────────────────────────── Contratação / Trabalho ───────────────────────────────
+// Contract representa a contratação e o trabalho em si. "Trabalho concluído"
+// = Contract COMPLETED (contratante marcou + freelancer confirmou).
+
+enum ContractStatus {
+  ACTIVE // Contratado, trabalho a realizar
+  AWAITING_CONFIRMATION // Contratante marcou como concluído, aguardando freelancer
+  COMPLETED
+  CANCELLED
+}
+
+model Contract {
+  id                    String            @id @default(cuid())
+  applicationId         String            @unique
+  application           Application       @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  opportunityId         String
+  opportunity           Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Restrict)
+  freelancerId          String
+  freelancer            FreelancerProfile @relation(fields: [freelancerId], references: [id], onDelete: Restrict)
+  contractorId          String
+  contractor            ContractorProfile @relation(fields: [contractorId], references: [id], onDelete: Restrict)
+  status                ContractStatus    @default(ACTIVE)
+  // Snapshot do combinado no momento da contratação
+  agreedPayCents        Int?
+  agreedPayUnit         PayUnit           @default(SHIFT)
+  workDate              DateTime?         @db.Date
+  startTime             String?
+  endTime               String?
+  contractorMarkedAt    DateTime?
+  freelancerConfirmedAt DateTime?
+  completedAt           DateTime?
+  cancelledAt           DateTime?
+  cancelledBy           UserRole?
+  cancelReason          String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  reviews Review[]
+
+  @@index([freelancerId, status])
+  @@index([contractorId, status])
+}
+
+// ─────────────────────────────── Avaliações ───────────────────────────────
+
+enum ReviewDirection {
+  CONTRACTOR_TO_FREELANCER
+  FREELANCER_TO_CONTRACTOR
+}
+
+model Review {
+  id         String          @id @default(cuid())
+  contractId String
+  contract   Contract        @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  direction  ReviewDirection
+  authorId   String
+  author     User            @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  targetId   String
+  target     User            @relation("ReviewTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  overall    Int
+  // Critérios: freelancer → punctuality, professionalism, communication, quality
+  //            contratante → payment, organization, communication, respect
+  criteria   Json
+  comment    String?         @db.Text
+  hidden     Boolean         @default(false) // moderação
+  createdAt  DateTime        @default(now())
+
+  @@unique([contractId, direction])
+  @@index([targetId, hidden])
+}
+
+// ─────────────────────────────── Notificações ───────────────────────────────
+
+enum NotificationType {
+  NEW_OPPORTUNITY
+  URGENT_OPPORTUNITY
+  NEW_APPLICATION
+  APPLICATION_VIEWED
+  APPLICATION_IN_REVIEW
+  APPLICATION_SELECTED
+  APPLICATION_REJECTED
+  APPLICATION_CANCELLED
+  CONTRACT_CANCELLED
+  WORK_MARKED_DONE
+  WORK_CONFIRMED
+  NEW_REVIEW
+  SYSTEM
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String?
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, readAt, createdAt])
+}
+
+// ─────────────────────────────── Cursos ───────────────────────────────
+
+model Course {
+  id          String   @id @default(cuid())
+  title       String
+  provider    String
+  description String   @db.Text
+  url         String
+  emoji       String?
+  roleId      String?
+  role        Role?    @relation(fields: [roleId], references: [id])
+  featured    Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
