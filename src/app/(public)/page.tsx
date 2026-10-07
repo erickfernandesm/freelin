@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BadgeCheck, Lock, MapPin, Sprout, Zap } from "lucide-react";
+import { BadgeCheck, Lock, Sprout } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { OpportunityTicket, type TicketData } from "@/components/opportunity-ticket";
 import { ButtonLink } from "@/components/ui/button";
@@ -92,10 +92,7 @@ export default async function Landing() {
       {/* Hero: o produto real em primeiro plano */}
       <section className="mx-auto grid max-w-7xl gap-10 px-5 pb-16 pt-8 md:grid-cols-[1.05fr_1fr] md:items-center md:pt-16">
         <div>
-          <p className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3 py-1 text-sm font-semibold text-brand-700">
-            <MapPin className="size-4" /> Juiz de Fora e região
-          </p>
-          <h1 className="mt-5 text-[34px] font-extrabold leading-[1.04] tracking-[-0.035em] text-ink sm:text-[56px]">
+          <h1 className="text-[34px] font-extrabold leading-[1.04] tracking-[-0.035em] text-ink sm:text-[56px]">
             Quem procura trabalho encontra oportunidades.
             <span className="mt-2 block text-brand">Quem precisa de gente encontra quem está disponível.</span>
           </h1>
@@ -195,6 +192,7 @@ export default async function Landing() {
       {/* Como funciona: dois caminhos, cada um uma sequência real */}
       <section className="mx-auto grid max-w-7xl gap-12 px-5 py-20 md:grid-cols-2">
         <Steps
+          cta={{ href: "/cadastro?perfil=freelancer", label: "Criar conta de freelancer" }}
           title="Para quem quer trabalhar"
           steps={[
             "Crie seu perfil e escolha as cidades onde aceita trabalhar.",
@@ -203,6 +201,7 @@ export default async function Landing() {
           ]}
         />
         <Steps
+          cta={{ href: "/cadastro?perfil=contratante", label: "Criar conta de contratante" }}
           title="Para quem precisa contratar"
           steps={[
             "Publique a oportunidade em menos de dois minutos.",
@@ -210,28 +209,6 @@ export default async function Landing() {
             "Escolha quem vai, marque o trabalho como concluído e avalie.",
           ]}
         />
-      </section>
-
-      <section className="px-5 pb-20">
-        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[2rem] bg-signal px-8 py-12 md:px-14">
-          <div className="relative z-10 grid items-center gap-8 md:grid-cols-[1fr_auto]">
-            <div>
-              <p className="inline-flex items-center gap-1.5 rounded-full bg-ink/10 px-3 py-1 text-sm font-bold text-ink">
-                <Zap className="size-4 fill-current" /> Contratação imediata
-              </p>
-              <h2 className="mt-4 text-3xl font-extrabold leading-tight tracking-[-0.02em] text-ink sm:text-4xl">
-                Alguém faltou e a casa abre às 18h?
-              </h2>
-              <p className="mt-2 max-w-xl text-lg text-ink/75">
-                Publique a vaga como imediata. Ela vai para o topo e os freelancers da região são avisados na hora.
-              </p>
-            </div>
-            <ButtonLink href="/cadastro?perfil=contratante" variant="ink" size="lg">
-              Publicar oportunidade
-            </ButtonLink>
-          </div>
-          <Zap aria-hidden className="absolute -right-10 -top-16 size-72 rotate-12 fill-ink/[0.06] text-transparent" />
-        </div>
       </section>
 
       <footer className="border-t border-line">
@@ -254,7 +231,7 @@ function Point({ icon, title, children }: { icon: React.ReactNode; title: string
   );
 }
 
-function Steps({ title, steps }: { title: string; steps: string[] }) {
+function Steps({ title, steps, cta }: { title: string; steps: string[]; cta: { href: string; label: string } }) {
   return (
     <div>
       <h2 className="text-2xl font-extrabold tracking-[-0.02em]">{title}</h2>
@@ -268,6 +245,9 @@ function Steps({ title, steps }: { title: string; steps: string[] }) {
           </li>
         ))}
       </ol>
+      <ButtonLink href={cta.href} variant="secondary" className="mt-8">
+        {cta.label}
+      </ButtonLink>
     </div>
   );
 }
