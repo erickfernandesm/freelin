@@ -19,12 +19,18 @@ export async function requestPasswordReset(email: string, origin: string) {
     where: { email: email.toLowerCase().trim() },
     select: { id: true, name: true, email: true, status: true },
   });
-  if (!user || user.status !== "ACTIVE") return;
+  if (!user || user.status !== "ACTIVE") {
+    console.info(`[senha] pedido para ${maskEmail(email)} ignorado: ${user ? "conta inativa" : "e-mail sem conta"}`);
+    return;
+  }
 
   const recent = await db.passwordReset.count({
     where: { userId: user.id, createdAt: { gte: new Date(Date.now() - TOKEN_TTL_MS) } },
   });
-  if (recent >= MAX_PER_HOUR) return;
+  if (recent >= MAX_PER_HOUR) {
+    console.info(`[senha] pedido para ${maskEmail(user.email)} ignorado: limite de ${MAX_PER_HOUR} links por hora`);
+    return;
+  }
 
   const token = randomToken();
   await db.passwordReset.create({
@@ -42,7 +48,14 @@ export async function requestPasswordReset(email: string, origin: string) {
     button: { label: "Criar nova senha", href: link },
     footer: "Não foi você? Pode ignorar este e-mail: sua senha continua a mesma.",
   });
-  await sendMail({ to: user.email, toName: user.name, subject: "Crie sua nova senha do Freelin", html, text });
+  const sent = await sendMail({ to: user.email, toName: user.name, subject: "Crie sua nova senha do Freelin", html, text });
+  console.info(`[senha] link para ${maskEmail(user.email)} ${sent ? "enviado" : "NÃO enviado (veja o erro [mail] acima)"}`);
+}
+
+/** "erick@gmail.com" vira "er***@gmail.com" para não expor o e-mail inteiro no log */
+function maskEmail(email: string) {
+  const [name, domain] = email.toLowerCase().trim().split("@");
+  return `${(name ?? "").slice(0, 2)}***@${domain ?? "?"}`;
 }
 
 /** Link ainda válido? Usado para mostrar a tela certa antes de digitar a senha */
