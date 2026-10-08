@@ -9,7 +9,7 @@ import { canReview, validateScores, averageRating } from "../src/server/domain/r
 import { shiftToRange, shiftHours, todayISO } from "../src/server/domain/time.ts";
 import { accessExpiry, certificateCode, courseProgress, hasCourseAccess, nextLesson } from "../src/server/domain/courses.ts";
 import type { AvailabilitySlot, OpportunitySchedule } from "../src/server/domain/types.ts";
-import { coursePrice, videoSource } from "../src/lib/courses.ts";
+import { coursePrice, documentSource, lessonCount, videoSource } from "../src/lib/courses.ts";
 
 const jf = { id: "jf", lat: -21.7642, lng: -43.3503 };
 const matias = { id: "matias", lat: -21.869, lng: -43.3186 }; // ~12 km de JF
@@ -183,4 +183,13 @@ test("preço do curso e links de vídeo", () => {
   assert.equal(videoSource("https://vimeo.com/123456789")?.src, "https://player.vimeo.com/video/123456789");
   assert.equal(videoSource("https://cdn.site/aula.mp4")?.kind, "file");
   assert.equal(videoSource("nada"), null);
+});
+
+test("e-book: links de PDF e rótulos por formato", () => {
+  assert.equal(documentSource("https://drive.google.com/file/d/AbC_123/view?usp=sharing")?.kind, "embed");
+  assert.equal((documentSource("https://drive.google.com/file/d/AbC_123/view") as { src: string }).src, "https://drive.google.com/file/d/AbC_123/preview");
+  assert.equal(documentSource("https://site.com/livro.pdf")?.kind, "embed");
+  assert.equal(documentSource("https://site.com/livro")?.kind, "link");
+  assert.equal(lessonCount("EBOOK", 1), "1 capítulo");
+  assert.equal(lessonCount("VIDEO", 6), "6 aulas");
 });

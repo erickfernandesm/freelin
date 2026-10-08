@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BadgeCheck, Bell, GraduationCap, LayoutList, Lock, PlayCircle, Sprout, Trophy } from "lucide-react";
+import { BadgeCheck, Bell, BookOpen, GraduationCap, LayoutList, Lock, PlayCircle, Sprout, Trophy } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { SiteFooter } from "@/components/site-footer";
 import { SupportWidget } from "@/components/support-widget";
@@ -290,11 +290,11 @@ export default async function Landing() {
               <CourseStep icon={<GraduationCap className="size-5" />} title="Escolha por área">
                 Garçom, bartender, cozinha, recepção. Tem curso grátis e curso pago.
               </CourseStep>
-              <CourseStep icon={<PlayCircle className="size-5" />} title="Assista no seu ritmo">
-                Aulas em vídeo, organizadas em módulos. Seu progresso fica salvo e você continua de onde parou.
+              <CourseStep icon={<BookOpen className="size-5" />} title="Aprenda no seu ritmo">
+                Em vídeo ou em e-book, organizado em módulos. Seu progresso fica salvo e você continua de onde parou.
               </CourseStep>
               <CourseStep icon={<Trophy className="size-5" />} title="Ganhe certificado e troféu">
-                Concluiu todas as aulas? O certificado sai na hora e o troféu aparece no seu perfil, à vista dos contratantes.
+                Concluiu o curso? O certificado sai na hora e o troféu aparece no seu perfil, à vista dos contratantes.
               </CourseStep>
             </ol>
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">

@@ -60,6 +60,7 @@ const newCourseSchema = z.object({
   provider: z.string().trim().min(2, "Informe quem oferece").max(60),
   emoji: text(4),
   roleId: text(40),
+  format: z.enum(["VIDEO", "EBOOK"]).default("VIDEO"),
 });
 
 export async function adminNewCourseAction(_: ActionState, form: FormData): Promise<ActionState> {
@@ -81,6 +82,7 @@ const courseSchema = z.object({
   description: z.string().trim().max(2000, "Máximo de 2000 caracteres"),
   emoji: text(4),
   roleId: text(40),
+  format: z.enum(["VIDEO", "EBOOK"]),
   billing: z.enum(["FREE", "ONE_TIME", "MONTHLY", "YEARLY"]),
   price: moneyToCents,
   workloadHours: optionalInt(2000),
@@ -159,7 +161,7 @@ export async function adminModuleAction(_: ActionState, form: FormData): Promise
 // ───────────── Aulas ─────────────
 
 const lessonSchema = z.object({
-  title: z.string().trim().min(2, "Informe o título da aula").max(120),
+  title: z.string().trim().min(2, "Informe o título").max(120),
   description: text(5000),
   videoUrl: z
     .string()
@@ -167,6 +169,12 @@ const lessonSchema = z.object({
     .optional()
     .transform((v) => v || undefined)
     .pipe(z.string().url("Link do vídeo inválido").optional()),
+  fileUrl: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => v || undefined)
+    .pipe(z.string().url("Link do arquivo inválido").optional()),
   durationMin: optionalInt(600),
 });
 
@@ -181,12 +189,12 @@ export async function adminLessonAction(_: ActionState, form: FormData): Promise
         const moduleId = String(form.get("moduleId"));
         await adminCreateLesson(moduleId, parsed.data);
         refresh(await courseIdOf("module", moduleId));
-        return { ok: true, message: "Aula adicionada." };
+        return { ok: true, message: "Conteúdo adicionado." };
       }
       const id = String(form.get("id"));
       await adminUpdateLesson(id, parsed.data);
       refresh(await courseIdOf("lesson", id));
-      return { ok: true, message: "Aula salva." };
+      return { ok: true, message: "Conteúdo salvo." };
     });
   }
   return run(async () => {
@@ -196,7 +204,7 @@ export async function adminLessonAction(_: ActionState, form: FormData): Promise
     if (op === "delete") await adminDeleteLesson(id);
     else await adminMoveLesson(id, op === "up" ? "up" : "down");
     refresh(courseId);
-    return { ok: true, message: op === "delete" ? "Aula excluída." : undefined };
+    return { ok: true, message: op === "delete" ? "Excluído." : undefined };
   });
 }
 

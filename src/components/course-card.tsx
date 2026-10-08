@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ExternalLink, Trophy } from "lucide-react";
 import type { CatalogCourse } from "@/server/services/course.service";
-import { coursePrice, durationLabel } from "@/lib/courses";
+import { FORMAT_LABEL, coursePrice, durationLabel, lessonCount } from "@/lib/courses";
 import { cn } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { ProgressBar } from "@/components/ui/progress";
@@ -31,7 +31,7 @@ export function CourseCard({ c }: { c: CatalogCourse }) {
       <div className="flex flex-1 flex-col p-5">
         <div className="flex flex-wrap gap-1.5">
           {c.role && <Badge tone={featured ? "brand" : "neutral"}>{c.role.name}</Badge>}
-          {c.external && <Badge tone="muted">Parceiro</Badge>}
+          {c.external ? <Badge tone="muted">Parceiro</Badge> : <Badge tone="neutral">{FORMAT_LABEL[c.format]}</Badge>}
           {badge && (
             <Badge tone={badge.tone}>
               {c.state === "COMPLETED" && <Trophy className="size-3.5" />}
@@ -52,7 +52,7 @@ export function CourseCard({ c }: { c: CatalogCourse }) {
         ) : (
           <div className="mt-4 flex items-end justify-between gap-3">
             <span className="text-sm text-ink-3">
-              {c.lessonCount} {c.lessonCount === 1 ? "aula" : "aulas"}
+              {lessonCount(c.format, c.lessonCount)}
               {c.workloadHours ? `, ${durationLabel(c.workloadHours * 60)}` : ""}
             </span>
             <span className="text-lg font-extrabold tabular">{coursePrice(c.billing, c.priceCents)}</span>

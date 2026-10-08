@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ChevronRight, ExternalLink, GraduationCap } from "lucide-react";
 import { listRoles } from "@/server/services/catalog.service";
 import { adminListCourses } from "@/server/services/course-admin.service";
-import { coursePrice } from "@/lib/courses";
+import { FORMAT_LABEL, coursePrice, lessonCount } from "@/lib/courses";
 import { Badge } from "@/components/ui/badge";
 import { Card, EmptyState } from "@/components/ui/misc";
 import { NewCourseForm } from "./forms";
@@ -18,7 +18,7 @@ export default async function AdminCourses() {
       <Card className="p-6 lg:sticky lg:top-6">
         <h2 className="font-bold">Novo curso</h2>
         <p className="mt-1 text-sm text-ink-3">
-          Crie com o básico. Na próxima tela você monta os módulos e aulas, define o preço e publica.
+          Crie com o básico. Na próxima tela você monta os módulos e as aulas (ou capítulos do e-book), define o preço e publica.
         </p>
         <div className="mt-4">
           <NewCourseForm roles={roles} />
@@ -64,8 +64,8 @@ export default async function AdminCourses() {
                       ) : (
                         <>
                           <span>
-                            {c.moduleCount} {c.moduleCount === 1 ? "módulo" : "módulos"}, {c.lessonCount}{" "}
-                            {c.lessonCount === 1 ? "aula" : "aulas"}
+                            {FORMAT_LABEL[c.format]}, {c.moduleCount} {c.moduleCount === 1 ? "módulo" : "módulos"},{" "}
+                            {lessonCount(c.format, c.lessonCount)}
                           </span>
                           <span className="font-semibold text-ink">{coursePrice(c.billing, c.priceCents)}</span>
                           <span>

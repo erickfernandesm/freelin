@@ -167,7 +167,7 @@ function Diplomas({ rows, isFreelancer }: { rows: Awaited<ReturnType<typeof comp
   if (rows.length === 0) {
     return (
       <EmptyState icon={<Award className="size-7" />} title="Seus diplomas aparecem aqui">
-        Conclua todas as aulas de um curso para ganhar o certificado e um troféu no seu perfil.
+        Conclua um curso inteiro, em vídeo ou e-book, para ganhar o certificado e um troféu no seu perfil.
       </EmptyState>
     );
   }

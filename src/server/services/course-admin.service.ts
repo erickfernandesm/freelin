@@ -35,7 +35,7 @@ export async function pendingEnrollmentCount() {
   return db.enrollment.count({ where: { status: "PENDING" } });
 }
 
-export async function adminCreateCourse(input: { title: string; provider: string; emoji?: string; roleId?: string }) {
+export async function adminCreateCourse(input: { title: string; provider: string; emoji?: string; roleId?: string; format?: "VIDEO" | "EBOOK" }) {
   const course = await db.course.create({
     data: {
       title: input.title,
@@ -43,6 +43,7 @@ export async function adminCreateCourse(input: { title: string; provider: string
       description: "",
       emoji: input.emoji || null,
       roleId: input.roleId || null,
+      format: input.format ?? "VIDEO",
       // Nasce desativado: só entra na vitrine quando o admin publicar
       active: false,
     },
@@ -81,6 +82,7 @@ export type CourseSettings = {
   description: string;
   emoji?: string;
   roleId?: string;
+  format: "VIDEO" | "EBOOK";
   billing: "FREE" | "ONE_TIME" | "MONTHLY" | "YEARLY";
   priceCents?: number;
   workloadHours?: number;
@@ -94,7 +96,7 @@ export async function adminUpdateCourse(id: string, input: CourseSettings) {
   if (input.billing !== "FREE" && !input.priceCents) throw new DomainError("Informe o preço ou escolha a opção Grátis.");
   if (input.active && !input.url) {
     const lessons = await db.lesson.count({ where: { module: { courseId: id } } });
-    if (lessons === 0) throw new DomainError("Cadastre pelo menos uma aula antes de publicar o curso.");
+    if (lessons === 0) throw new DomainError("Cadastre pelo menos uma aula ou capítulo antes de publicar o curso.");
   }
   await db.course.update({
     where: { id },
@@ -104,6 +106,7 @@ export async function adminUpdateCourse(id: string, input: CourseSettings) {
       description: input.description,
       emoji: input.emoji || null,
       roleId: input.roleId || null,
+      format: input.format,
       billing: input.billing,
       priceCents: input.billing === "FREE" ? null : (input.priceCents ?? null),
       workloadHours: input.workloadHours ?? null,
@@ -136,7 +139,7 @@ export async function adminDeleteModule(id: string) {
   await db.courseModule.delete({ where: { id } });
 }
 
-export type LessonInput = { title: string; description?: string; videoUrl?: string; durationMin?: number };
+export type LessonInput = { title: string; description?: string; videoUrl?: string; fileUrl?: string; durationMin?: number };
 
 export async function adminCreateLesson(moduleId: string, input: LessonInput) {
   const last = await db.lesson.aggregate({ where: { moduleId }, _max: { position: true } });
@@ -146,6 +149,7 @@ export async function adminCreateLesson(moduleId: string, input: LessonInput) {
       title: input.title,
       description: input.description ?? null,
       videoUrl: input.videoUrl ?? null,
+      fileUrl: input.fileUrl ?? null,
       durationMin: input.durationMin ?? null,
       position: (last._max.position ?? 0) + 1,
     },
@@ -159,6 +163,7 @@ export async function adminUpdateLesson(id: string, input: LessonInput) {
       title: input.title,
       description: input.description ?? null,
       videoUrl: input.videoUrl ?? null,
+      fileUrl: input.fileUrl ?? null,
       durationMin: input.durationMin ?? null,
     },
   });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, Video } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, Pencil, Plus, Trash2, Video } from "lucide-react";
 import {
   adminGrantAccessAction,
   adminLessonAction,
@@ -13,7 +13,7 @@ import { ActionButton } from "@/components/action-button";
 import { Button } from "@/components/ui/button";
 import { Field, FormError, Input, Select, Textarea } from "@/components/ui/field";
 import { useActionForm } from "@/components/use-action-form";
-import { BILLING_OPTIONS, durationLabel } from "@/lib/courses";
+import { BILLING_OPTIONS, FORMAT_OPTIONS, durationLabel, lessonWord } from "@/lib/courses";
 import { cn } from "@/lib/format";
 import { Errors, useResettingForm } from "../form-bits";
 
@@ -33,6 +33,18 @@ function RoleSelect({ roles, defaultValue }: { roles: RoleOption[]; defaultValue
   );
 }
 
+function FormatSelect({ defaultValue = "VIDEO" }: { defaultValue?: string }) {
+  return (
+    <Select name="format" defaultValue={defaultValue} aria-label="Tipo de curso">
+      {FORMAT_OPTIONS.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.value === "EBOOK" ? "E-book (PDF)" : "Vídeo"}
+        </option>
+      ))}
+    </Select>
+  );
+}
+
 export function NewCourseForm({ roles }: { roles: RoleOption[] }) {
   const { onSubmit, pending, fe, state } = useActionForm(adminNewCourseAction);
   return (
@@ -43,6 +55,7 @@ export function NewCourseForm({ roles }: { roles: RoleOption[] }) {
       </div>
       <Input name="provider" placeholder="Quem oferece (escola ou professor)" aria-label="Quem oferece" invalid={!!fe.provider} />
       <RoleSelect roles={roles} />
+      <FormatSelect />
       <Errors fe={fe} error={state.error} />
       <Button type="submit" loading={pending} full icon={<Plus className="size-4" />}>
         Criar e montar o curso
@@ -58,6 +71,7 @@ type Settings = {
   description: string;
   emoji: string | null;
   roleId: string | null;
+  format: string;
   billing: string;
   priceCents: number | null;
   workloadHours: number | null;
@@ -100,9 +114,14 @@ export function CourseSettingsForm({ course, roles }: { course: Settings; roles:
       <Field label="Descrição" error={fe.description} hint="O que a pessoa vai aprender. Aparece na página do curso.">
         <Textarea name="description" defaultValue={course.description} className="min-h-32" />
       </Field>
-      <Field label="Área">
-        <RoleSelect roles={roles} defaultValue={course.roleId} />
-      </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Área">
+          <RoleSelect roles={roles} defaultValue={course.roleId} />
+        </Field>
+        <Field label="Tipo de curso" hint="Muda o que cada item pede: vídeo ou PDF.">
+          <FormatSelect defaultValue={course.format} />
+        </Field>
+      </div>
 
       <div className="rounded-2xl bg-mist p-4">
         <Field label="Cobrança">
@@ -275,41 +294,79 @@ export function ModuleHeader({
   );
 }
 
-// ───────────── Aulas ─────────────
+// ───────────── Aulas (vídeo) ou capítulos (e-book) ─────────────
 
-type LessonData = { id: string; title: string; description: string | null; videoUrl: string | null; durationMin: number | null };
+type Format = "VIDEO" | "EBOOK";
+type LessonData = {
+  id: string;
+  title: string;
+  description: string | null;
+  videoUrl: string | null;
+  fileUrl: string | null;
+  durationMin: number | null;
+};
 
 function LessonForm({
   lesson,
   moduleId,
+  format,
   onDone,
 }: {
   lesson?: LessonData;
   moduleId?: string;
+  format: Format;
   onDone: () => void;
 }) {
   const { ref, onSubmit, pending, fe, state } = useResettingForm(adminLessonAction, { onSuccess: onDone });
+  const ebook = format === "EBOOK";
+  const word = lessonWord(format);
   return (
     <form ref={ref} onSubmit={onSubmit} className="space-y-3 rounded-2xl bg-mist p-4">
       <input type="hidden" name="op" value={lesson ? "update" : "create"} />
       {lesson ? <input type="hidden" name="id" value={lesson.id} /> : <input type="hidden" name="moduleId" value={moduleId} />}
-      <Field label="Título da aula" error={fe.title}>
+      <Field label={ebook ? "Título do capítulo" : "Título da aula"} error={fe.title}>
         <Input name="title" defaultValue={lesson?.title} autoFocus invalid={!!fe.title} />
       </Field>
-      <Field label="Descrição" optional error={fe.description} hint="Resumo, materiais, exercícios. Aparece embaixo do vídeo.">
-        <Textarea name="description" defaultValue={lesson?.description ?? ""} />
+      {ebook ? (
+        <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
+          <Field
+            label="Link do e-book (PDF)"
+            optional
+            error={fe.fileUrl}
+            hint="Link de um PDF ou do Google Drive (compartilhado como Qualquer pessoa com o link)."
+          >
+            <Input name="fileUrl" type="url" defaultValue={lesson?.fileUrl ?? ""} placeholder="https://drive.google.com/file/d/..." />
+          </Field>
+          <Field label="Leitura" optional error={fe.durationMin} hint="Minutos">
+            <Input name="durationMin" defaultValue={lesson?.durationMin ?? ""} inputMode="numeric" placeholder="15" />
+          </Field>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
+          <Field label="Link do vídeo" optional error={fe.videoUrl} hint="YouTube (pode ser não listado), Vimeo ou arquivo .mp4">
+            <Input name="videoUrl" type="url" defaultValue={lesson?.videoUrl ?? ""} placeholder="https://youtu.be/..." />
+          </Field>
+          <Field label="Duração" optional error={fe.durationMin} hint="Minutos">
+            <Input name="durationMin" defaultValue={lesson?.durationMin ?? ""} inputMode="numeric" placeholder="12" />
+          </Field>
+        </div>
+      )}
+      <Field
+        label={ebook ? "Texto do capítulo" : "Descrição"}
+        optional
+        error={fe.description}
+        hint={ebook ? "Resumo ou o próprio conteúdo. Aparece junto do e-book." : "Resumo, exercícios. Aparece embaixo do vídeo."}
+      >
+        <Textarea name="description" defaultValue={lesson?.description ?? ""} className={ebook ? "min-h-40" : undefined} />
       </Field>
-      <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
-        <Field label="Link do vídeo" optional error={fe.videoUrl} hint="YouTube (pode ser não listado), Vimeo ou arquivo .mp4">
-          <Input name="videoUrl" type="url" defaultValue={lesson?.videoUrl ?? ""} placeholder="https://youtu.be/..." />
+      {!ebook && (
+        <Field label="Material de apoio" optional error={fe.fileUrl} hint="PDF ou link para baixar junto da aula.">
+          <Input name="fileUrl" type="url" defaultValue={lesson?.fileUrl ?? ""} placeholder="https://" />
         </Field>
-        <Field label="Duração" optional error={fe.durationMin} hint="Minutos">
-          <Input name="durationMin" defaultValue={lesson?.durationMin ?? ""} inputMode="numeric" placeholder="12" />
-        </Field>
-      </div>
+      )}
       <div className="flex gap-2">
         <Button type="submit" loading={pending}>
-          {lesson ? "Salvar aula" : "Adicionar aula"}
+          {lesson ? `Salvar ${word}` : `Adicionar ${word}`}
         </Button>
         <Button type="button" variant="ghost" onClick={onDone}>
           Cancelar
@@ -324,63 +381,75 @@ export function LessonItem({
   number,
   isFirst,
   isLast,
+  format,
 }: {
   lesson: LessonData;
   number: number;
   isFirst: boolean;
   isLast: boolean;
+  format: Format;
 }) {
   const [editing, setEditing] = useState(false);
   const close = useCallback(() => setEditing(false), []);
-  if (editing) return <LessonForm lesson={lesson} onDone={close} />;
+  if (editing) return <LessonForm lesson={lesson} format={format} onDone={close} />;
   const duration = durationLabel(lesson.durationMin);
+  const word = lessonWord(format);
+  const media =
+    format === "EBOOK"
+      ? lesson.fileUrl
+        ? { icon: <BookOpen className="size-3.5" />, label: "PDF" }
+        : null
+      : lesson.videoUrl
+        ? { icon: <Video className="size-3.5" />, label: "Vídeo" }
+        : null;
   return (
     <div className="flex items-center gap-3 py-2">
       <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-50 text-sm font-bold text-brand-700 tabular">{number}</span>
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold">{lesson.title}</p>
         <p className="flex items-center gap-2 text-xs text-ink-3">
-          {lesson.videoUrl ? (
+          {media ? (
             <span className="inline-flex items-center gap-1">
-              <Video className="size-3.5" /> Vídeo
+              {media.icon} {media.label}
             </span>
           ) : (
-            <span>Sem vídeo</span>
+            <span>{format === "EBOOK" ? "Sem PDF" : "Sem vídeo"}</span>
           )}
           {duration && <span>{duration}</span>}
-          {lesson.description && <span>Com descrição</span>}
+          {lesson.description && <span>{format === "EBOOK" ? "Com texto" : "Com descrição"}</span>}
+          {format === "VIDEO" && lesson.fileUrl && <span>Com material</span>}
         </p>
       </div>
       <div className="flex shrink-0 items-center">
-        {!isFirst && <IconAction action={adminLessonAction} fields={{ op: "up", id: lesson.id }} label="Subir aula" icon={<ArrowUp className="size-4" />} />}
-        {!isLast && <IconAction action={adminLessonAction} fields={{ op: "down", id: lesson.id }} label="Descer aula" icon={<ArrowDown className="size-4" />} />}
-        <Button type="button" variant="ghost" size="sm" className="size-9 px-0!" onClick={() => setEditing(true)} aria-label="Editar aula">
+        {!isFirst && <IconAction action={adminLessonAction} fields={{ op: "up", id: lesson.id }} label={`Subir ${word}`} icon={<ArrowUp className="size-4" />} />}
+        {!isLast && <IconAction action={adminLessonAction} fields={{ op: "down", id: lesson.id }} label={`Descer ${word}`} icon={<ArrowDown className="size-4" />} />}
+        <Button type="button" variant="ghost" size="sm" className="size-9 px-0!" onClick={() => setEditing(true)} aria-label={`Editar ${word}`}>
           <Pencil className="size-4" />
         </Button>
         <IconAction
           action={adminLessonAction}
           fields={{ op: "delete", id: lesson.id }}
-          label="Excluir aula"
+          label={`Excluir ${word}`}
           icon={<Trash2 className="size-4" />}
           danger
-          confirm={`Excluir a aula "${lesson.title}"?`}
+          confirm={`Excluir "${lesson.title}"?`}
         />
       </div>
     </div>
   );
 }
 
-export function NewLesson({ moduleId }: { moduleId: string }) {
+export function NewLesson({ moduleId, format }: { moduleId: string; format: Format }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
-  if (open) return <LessonForm moduleId={moduleId} onDone={close} />;
+  if (open) return <LessonForm moduleId={moduleId} format={format} onDone={close} />;
   return (
     <button
       type="button"
       onClick={() => setOpen(true)}
       className="mt-1 flex w-full items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-line py-2.5 text-sm font-semibold text-ink-2 hover:border-brand hover:text-brand"
     >
-      <Plus className="size-4" /> Adicionar aula
+      <Plus className="size-4" /> Adicionar {lessonWord(format)}
     </button>
   );
 }

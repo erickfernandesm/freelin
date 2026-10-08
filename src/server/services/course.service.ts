@@ -129,7 +129,7 @@ export async function getLessonForStudent(courseId: string, lessonId: string, us
   if (index < 0) throw new NotFoundError("Aula");
   const lesson = await db.lesson.findUniqueOrThrow({
     where: { id: lessonId },
-    select: { id: true, title: true, description: true, videoUrl: true, durationMin: true },
+    select: { id: true, title: true, description: true, videoUrl: true, fileUrl: true, durationMin: true },
   });
   return {
     ...data,
@@ -146,7 +146,7 @@ export async function getLessonForStudent(courseId: string, lessonId: string, us
  */
 export async function requestEnrollment(user: { id: string; name: string }, courseId: string) {
   const course = await loadCourse(courseId);
-  if (course.modules.every((m) => m.lessons.length === 0)) throw new DomainError("Este curso ainda não tem aulas publicadas.");
+  if (course.modules.every((m) => m.lessons.length === 0)) throw new DomainError("Este curso ainda não tem conteúdo publicado.");
   const current = await db.enrollment.findUnique({ where: { userId_courseId: { userId: user.id, courseId } } });
   if (current && hasCourseAccess(current)) throw new DomainError("Você já tem acesso a este curso.");
   if (current?.status === "PENDING") throw new DomainError("Seu pedido já foi enviado. Em breve a equipe libera o acesso.");
@@ -228,6 +228,7 @@ export async function myEnrollments(userId: string) {
           title: true,
           emoji: true,
           provider: true,
+          format: true,
           billing: true,
           priceCents: true,
           workloadHours: true,

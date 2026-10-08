@@ -411,6 +411,11 @@ enum CourseBilling {
   YEARLY
 }
 
+enum CourseFormat {
+  VIDEO // aulas em vídeo
+  EBOOK // capítulos de leitura (PDF)
+}
+
 enum EnrollmentStatus {
   PENDING // pediu inscrição, aguardando confirmação do pagamento
   ACTIVE
@@ -426,6 +431,7 @@ model Course {
   emoji              String?
   roleId             String?
   role               Role?         @relation(fields: [roleId], references: [id])
+  format             CourseFormat  @default(VIDEO)
   billing            CourseBilling @default(ONE_TIME)
   priceCents         Int?
   workloadHours      Int?
@@ -459,6 +465,8 @@ model Lesson {
   title       String
   description String?      @db.Text
   videoUrl    String?
+  // E-book (PDF) do capítulo, ou material de apoio de uma aula em vídeo
+  fileUrl     String?
   durationMin Int?
   position    Int          @default(0)
   createdAt   DateTime     @default(now())

@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, ArrowRight, CheckCircle2, ExternalLink, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2, ExternalLink, FileText, PlayCircle } from "lucide-react";
 import { lessonDoneAction } from "@/actions/course";
 import { requireUser } from "@/server/auth/session";
 import { DomainError } from "@/server/errors";
 import { orNotFound } from "@/server/page";
 import { getLessonForStudent } from "@/server/services/course.service";
-import { durationLabel, videoSource } from "@/lib/courses";
-import { cn } from "@/lib/format";
+import { documentSource, durationLabel, lessonCount, lessonWord, videoSource } from "@/lib/courses";
+import { capitalize, cn } from "@/lib/format";
 import { ActionButton } from "@/components/action-button";
 import { BackLink } from "@/components/back-link";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +32,11 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
   const { id, lessonId } = await params;
   const user = await requireUser();
   const { course, lesson, progress, doneIds, done, prev, nextInOrder } = await load(id, lessonId, user.id);
-  const video = videoSource(lesson.videoUrl);
+  const ebook = course.format === "EBOOK";
+  const video = ebook ? null : videoSource(lesson.videoUrl);
+  const doc = documentSource(lesson.fileUrl);
+  const hasMedia = !!video || (ebook && !!doc);
+  const word = lessonWord(course.format);
   let n = 0;
 
   return (
@@ -67,16 +71,46 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
             </a>
           )}
 
-          <div className={cn(video && "mt-6")}>
+          {/* E-book: o PDF abre aqui dentro; no celular dá para abrir em tela cheia */}
+          {ebook && doc?.kind === "embed" && (
+            <div>
+              <div className="h-[75dvh] min-h-[480px] overflow-hidden rounded-3xl bg-paper ring-1 ring-line">
+                <iframe src={doc.src} title={lesson.title} className="size-full" allow="fullscreen" />
+              </div>
+              <a
+                href={doc.open}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline"
+              >
+                Abrir o e-book em tela cheia <ExternalLink className="size-3.5" />
+              </a>
+            </div>
+          )}
+          {ebook && doc?.kind === "link" && (
+            <a
+              href={doc.src}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col items-center justify-center gap-3 rounded-3xl bg-brand-50 px-6 py-14 text-brand-700 ring-1 ring-brand-100 hover:bg-brand-100"
+            >
+              <BookOpen className="size-12" />
+              <span className="inline-flex items-center gap-1.5 font-semibold">
+                Abrir o e-book deste capítulo <ExternalLink className="size-4" />
+              </span>
+            </a>
+          )}
+
+          <div className={cn(hasMedia && "mt-6")}>
             <p className="text-sm font-semibold text-brand">
-              Aula {lesson.number}, {lesson.moduleTitle}
+              {capitalize(word)} {lesson.number}, {lesson.moduleTitle}
             </p>
             <h1 className="mt-1 text-[26px] font-extrabold leading-tight tracking-[-0.02em] sm:text-[30px]">{lesson.title}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               {lesson.durationMin ? <Badge tone="neutral">{durationLabel(lesson.durationMin)}</Badge> : null}
               {done && (
                 <Badge tone="success">
-                  <CheckCircle2 className="size-3.5" /> Concluída
+                  <CheckCircle2 className="size-3.5" /> {ebook ? "Concluído" : "Concluída"}
                 </Badge>
               )}
             </div>
@@ -88,10 +122,28 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
             </Card>
           )}
 
+          {!ebook && doc && (
+            <a
+              href={doc.kind === "embed" ? doc.open : doc.src}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 flex items-center gap-3 rounded-2xl bg-paper p-4 ring-1 ring-line hover:ring-brand"
+            >
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand">
+                <FileText className="size-5" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold">Material de apoio</span>
+                <span className="block text-sm text-ink-3">Abre em outra aba</span>
+              </span>
+              <ExternalLink className="size-4 text-ink-3" />
+            </a>
+          )}
+
           <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             {prev ? (
               <Link href={`/cursos/${course.id}/aula/${prev.id}`} className={buttonClass("ghost")}>
-                <ArrowLeft className="size-4" /> Aula anterior
+                <ArrowLeft className="size-4" /> {ebook ? "Capítulo anterior" : "Aula anterior"}
               </Link>
             ) : (
               <span />
@@ -100,11 +152,11 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
               {done ? (
                 <>
                   <ActionButton action={lessonDoneAction} fields={{ lessonId: lesson.id, done: "0" }} variant="ghost">
-                    Desmarcar aula
+                    Desmarcar {word}
                   </ActionButton>
                   {nextInOrder && (
                     <Link href={`/cursos/${course.id}/aula/${nextInOrder.id}`} className={buttonClass("primary")}>
-                      Próxima aula <ArrowRight className="size-4" />
+                      {ebook ? "Próximo capítulo" : "Próxima aula"} <ArrowRight className="size-4" />
                     </Link>
                   )}
                 </>
@@ -114,7 +166,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
                   fields={{ lessonId: lesson.id, done: "1", next: nextInOrder?.id ?? "" }}
                   icon={<CheckCircle2 className="size-4" />}
                 >
-                  {nextInOrder ? "Concluir e ir para a próxima" : "Concluir aula"}
+                  {nextInOrder ? (ebook ? "Concluir e ir para o próximo" : "Concluir e ir para a próxima") : `Concluir ${word}`}
                 </ActionButton>
               )}
             </div>
@@ -127,7 +179,7 @@ export default async function LessonPage({ params }: { params: Promise<{ id: str
               <p className="truncate font-bold">{course.title}</p>
               <ProgressBar percent={progress.percent} tone={progress.complete ? "ok" : "brand"} className="mt-2" />
               <p className="mt-1 text-sm text-ink-3">
-                {progress.done} de {progress.total} aulas
+                {progress.done} de {lessonCount(course.format, progress.total)}
               </p>
             </div>
             <div className="max-h-[60vh] overflow-y-auto py-2">

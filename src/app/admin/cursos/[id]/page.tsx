@@ -6,8 +6,8 @@ import { readParams, orNotFound } from "@/server/page";
 import { listRoles } from "@/server/services/catalog.service";
 import { adminGetCourse } from "@/server/services/course-admin.service";
 import { dateToISO } from "@/server/domain/time";
-import { BILLING_LABEL, coursePrice, durationLabel } from "@/lib/courses";
-import { relativeTime, shortDate } from "@/lib/format";
+import { BILLING_LABEL, FORMAT_LABEL, coursePrice, durationLabel, lessonWord } from "@/lib/courses";
+import { capitalize, relativeTime, shortDate } from "@/lib/format";
 import { ActionButton } from "@/components/action-button";
 import { BackLink } from "@/components/back-link";
 import { Avatar } from "@/components/ui/avatar";
@@ -57,6 +57,7 @@ export default async function AdminCoursePage({
                 {coursePrice(course.billing, course.priceCents)}
                 {course.billing !== "FREE" && ` · ${BILLING_LABEL[course.billing]}`}
               </Badge>
+              <Badge tone="neutral">{FORMAT_LABEL[course.format]}</Badge>
               {course.url && <Badge tone="warning">Link de parceiro</Badge>}
             </div>
           </div>
@@ -79,7 +80,7 @@ export default async function AdminCoursePage({
         <div className="mb-6 rounded-3xl bg-brand-50 p-5 text-[15px] text-brand-700 ring-1 ring-brand-100">
           <p className="font-bold">Curso criado como rascunho.</p>
           <p className="mt-1">
-            Agora crie os módulos e as aulas, escreva a descrição e defina a cobrança. Quando estiver pronto, marque
+            Agora crie os módulos e as aulas (ou capítulos, se for e-book), escreva a descrição e defina a cobrança. Quando estiver pronto, marque
             &quot;Publicado na vitrine&quot; e salve.
           </p>
         </div>
@@ -87,7 +88,10 @@ export default async function AdminCoursePage({
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat value={course.modules.length} label="Módulos" />
-        <Stat value={course.lessonCount} label={totalMinutes ? `Aulas, ${durationLabel(totalMinutes)}` : "Aulas"} />
+        <Stat
+          value={course.lessonCount}
+          label={`${capitalize(lessonWord(course.format, 2))}${totalMinutes ? `, ${durationLabel(totalMinutes)}` : ""}`}
+        />
         <Stat value={activeCount} label="Alunos com acesso" />
         <Stat value={completedCount} label="Concluíram" tone={completedCount ? "brand" : undefined} />
       </div>
@@ -116,7 +120,8 @@ export default async function AdminCoursePage({
                     return (
                       <LessonItem
                         key={l.id}
-                        lesson={{ id: l.id, title: l.title, description: l.description, videoUrl: l.videoUrl, durationMin: l.durationMin }}
+                        lesson={{ id: l.id, title: l.title, description: l.description, videoUrl: l.videoUrl, fileUrl: l.fileUrl, durationMin: l.durationMin }}
+                        format={course.format}
                         number={lessonNumber}
                         isFirst={li === 0}
                         isLast={li === m.lessons.length - 1}
@@ -125,7 +130,7 @@ export default async function AdminCoursePage({
                   })}
                 </div>
                 <div className="mt-2">
-                  <NewLesson moduleId={m.id} />
+                  <NewLesson moduleId={m.id} format={course.format} />
                 </div>
               </Card>
             ))}
@@ -245,6 +250,7 @@ export default async function AdminCoursePage({
                 description: course.description,
                 emoji: course.emoji,
                 roleId: course.roleId,
+                format: course.format,
                 billing: course.billing,
                 priceCents: course.priceCents,
                 workloadHours: course.workloadHours,

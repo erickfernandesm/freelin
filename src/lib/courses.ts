@@ -61,3 +61,44 @@ export function durationLabel(min: number | null | undefined) {
   const m = min % 60;
   return m ? `${h}h${String(m).padStart(2, "0")}` : `${h}h`;
 }
+
+// ───────────── Formato: vídeo ou e-book ─────────────
+
+export const FORMAT_OPTIONS = [
+  { value: "VIDEO", label: "Vídeo", hint: "Aulas em vídeo (YouTube, Vimeo ou arquivo)" },
+  { value: "EBOOK", label: "E-book", hint: "Capítulos de leitura em PDF" },
+] as const;
+
+export const FORMAT_LABEL: Record<string, string> = { VIDEO: "Vídeo", EBOOK: "E-book" };
+
+/** "aula"/"aulas" ou "capítulo"/"capítulos", conforme o formato */
+export function lessonWord(format: string, n = 1) {
+  if (format === "EBOOK") return n === 1 ? "capítulo" : "capítulos";
+  return n === 1 ? "aula" : "aulas";
+}
+
+export function lessonCount(format: string, n: number) {
+  return `${n} ${lessonWord(format, n)}`;
+}
+
+export type DocumentSource = { kind: "embed"; src: string; open: string } | { kind: "link"; src: string };
+
+/**
+ * PDF dentro da página: Google Drive vira /preview; .pdf abre no leitor do
+ * navegador. Qualquer outro link vira botão "Abrir".
+ */
+export function documentSource(url: string | null | undefined): DocumentSource | null {
+  if (!url) return null;
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return null;
+  }
+  if (u.hostname === "drive.google.com") {
+    const id = u.pathname.match(/\/file\/d\/([\w-]+)/)?.[1] ?? u.searchParams.get("id");
+    if (id) return { kind: "embed", src: `https://drive.google.com/file/d/${id}/preview`, open: `https://drive.google.com/file/d/${id}/view` };
+  }
+  if (/\.pdf$/i.test(u.pathname)) return { kind: "embed", src: url, open: url };
+  return { kind: "link", src: url };
+}

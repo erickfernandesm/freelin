@@ -6,7 +6,7 @@ import { requireUser } from "@/server/auth/session";
 import { orNotFound, readParams } from "@/server/page";
 import { getCourseForStudent } from "@/server/services/course.service";
 import { dateToISO } from "@/server/domain/time";
-import { BILLING_LABEL, coursePrice, durationLabel, isFreeCourse } from "@/lib/courses";
+import { BILLING_LABEL, coursePrice, durationLabel, FORMAT_LABEL, isFreeCourse, lessonCount as lessonCountLabel } from "@/lib/courses";
 import { cn, shortDate } from "@/lib/format";
 import { ActionButton } from "@/components/action-button";
 import { BackLink } from "@/components/back-link";
@@ -99,20 +99,20 @@ export default async function CoursePage({
               <div className="mt-3">
                 <ProgressBar percent={progress.percent} tone={state === "COMPLETED" ? "ok" : "brand"} />
                 <p className="mt-1.5 text-sm text-ink-3">
-                  {progress.done} de {progress.total} aulas concluídas
+                  {progress.done} de {lessonCountLabel(course.format, progress.total)} {course.format === "EBOOK" ? "concluídos" : "concluídas"}
                 </p>
               </div>
             )}
 
             <ul className="mt-5 space-y-2.5 text-[15px] text-ink-2">
               <li className="flex items-center gap-2.5">
-                <Layers className="size-4 text-brand" /> {course.modules.filter((m) => m.lessons.length).length} módulos, {lessonCount}{" "}
-                {lessonCount === 1 ? "aula" : "aulas"}
+                <Layers className="size-4 text-brand" /> {FORMAT_LABEL[course.format]}, {course.modules.filter((m) => m.lessons.length).length}{" "}
+                módulos, {lessonCountLabel(course.format, lessonCount)}
               </li>
               {(totalMinutes > 0 || course.workloadHours) && (
                 <li className="flex items-center gap-2.5">
                   <Clock className="size-4 text-brand" />
-                  {course.workloadHours ? `Carga horária de ${course.workloadHours}h` : `${durationLabel(totalMinutes)} de vídeo`}
+                  {course.workloadHours ? `Carga horária de ${course.workloadHours}h` : `${durationLabel(totalMinutes)} de ${course.format === "EBOOK" ? "leitura" : "vídeo"}`}
                 </li>
               )}
               {course.certificateEnabled && (
@@ -160,7 +160,7 @@ export default async function CoursePage({
               {state === "ACTIVE" && next && (
                 <>
                   <ButtonLink href={`/cursos/${course.id}/aula/${next.id}`} size="lg" full>
-                    {progress.done === 0 ? "Começar a primeira aula" : "Continuar de onde parei"}
+                    {progress.done === 0 ? (course.format === "EBOOK" ? "Começar a leitura" : "Começar a primeira aula") : "Continuar de onde parei"}
                   </ButtonLink>
                   <p className="mt-2 truncate text-center text-sm text-ink-3">{next.title}</p>
                   {enrollment?.expiresAt && (
@@ -178,7 +178,7 @@ export default async function CoursePage({
                   )}
                   {access && next && (
                     <ButtonLink href={`/cursos/${course.id}/aula/${next.id}`} variant="secondary" full>
-                      Rever as aulas
+                      {course.format === "EBOOK" ? "Reler o e-book" : "Rever as aulas"}
                     </ButtonLink>
                   )}
                 </div>
