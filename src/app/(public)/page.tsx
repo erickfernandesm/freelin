@@ -1,11 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import { BadgeCheck, Bell, LayoutList, Lock, Sprout } from "lucide-react";
+import { BadgeCheck, Bell, GraduationCap, LayoutList, Lock, PlayCircle, Sprout, Trophy } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { SiteFooter } from "@/components/site-footer";
 import { Reveal } from "@/components/reveal";
 import { OpportunityTicket, type TicketData } from "@/components/opportunity-ticket";
 import { ButtonLink } from "@/components/ui/button";
+import { ProgressBar } from "@/components/ui/progress";
+import { CONTACT } from "@/lib/site";
 import { listPublicOpportunities } from "@/server/services/opportunity.service";
 import { todayLocalISO } from "@/lib/format";
 
@@ -83,6 +85,9 @@ export default async function Landing() {
       <header className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
         <Logo height={28} />
         <nav className="flex items-center gap-2">
+          <a href="#cursos" className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-ink-2 hover:bg-ink/5 hover:text-ink sm:inline-flex">
+            Cursos
+          </a>
           <ButtonLink href="/entrar" variant="ghost" size="sm">
             Entrar
           </ButtonLink>
@@ -269,6 +274,103 @@ export default async function Landing() {
         </div>
       </section>
 
+      {/* Cursos: como funciona, mostrado pelo próprio produto (progresso e troféus no perfil) */}
+      <section id="cursos" className="border-t border-line bg-mist">
+        <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 py-20 md:grid-cols-2">
+          <Reveal from="left">
+            <p className="text-sm font-bold uppercase tracking-wide text-brand">Cursos Freelin</p>
+            <h2 className="mt-2 text-3xl font-extrabold leading-tight tracking-[-0.02em] sm:text-4xl">
+              Aprenda uma função nova e mostre isso no seu perfil.
+            </h2>
+            <p className="mt-3 max-w-md text-lg leading-relaxed text-ink-2">
+              Cursos curtos e práticos para quem quer trabalhar em bar, salão, cozinha e eventos.
+            </p>
+            <ol className="mt-8 space-y-5">
+              <CourseStep icon={<GraduationCap className="size-5" />} title="Escolha por área">
+                Garçom, bartender, cozinha, recepção. Tem curso grátis e curso pago.
+              </CourseStep>
+              <CourseStep icon={<PlayCircle className="size-5" />} title="Assista no seu ritmo">
+                Aulas em vídeo, organizadas em módulos. Seu progresso fica salvo e você continua de onde parou.
+              </CourseStep>
+              <CourseStep icon={<Trophy className="size-5" />} title="Ganhe certificado e troféu">
+                Concluiu todas as aulas? O certificado sai na hora e o troféu aparece no seu perfil, à vista dos contratantes.
+              </CourseStep>
+            </ol>
+            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <ButtonLink href="/cadastro?perfil=freelancer" size="lg">
+                Ver os cursos
+              </ButtonLink>
+              {CONTACT.instagram && (
+                <a
+                  href={`https://instagram.com/${CONTACT.instagram}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[15px] font-semibold text-ink-2 hover:text-brand"
+                >
+                  Tem curso profissionalizante? Anuncie aqui
+                </a>
+              )}
+            </div>
+          </Reveal>
+
+          <div className="space-y-6">
+            <Reveal from="right" delay={150}>
+              <figure className="ml-auto max-w-md">
+                <figcaption className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-3">
+                  <PlayCircle className="size-4" /> Seu progresso no curso
+                </figcaption>
+                <div className="rounded-3xl bg-paper p-5 shadow-lift ring-1 ring-line">
+                  <div className="flex items-center gap-4">
+                    <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-brand-50 text-3xl" aria-hidden>
+                      🍽️
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-bold leading-snug">Garçom de eventos</p>
+                      <p className="text-sm text-ink-3">Aula 4 de 6: Postura e atendimento</p>
+                    </div>
+                  </div>
+                  <ProgressBar percent={67} className="mt-4" />
+                </div>
+              </figure>
+            </Reveal>
+            <Reveal delay={400}>
+              <figure>
+                <figcaption className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-3">
+                  <Trophy className="size-4" /> Os troféus no perfil que o contratante vê
+                </figcaption>
+                <div className="rounded-3xl bg-paper p-5 ring-1 ring-line/80">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="flex items-center gap-2.5 font-bold">
+                      <span className="grid size-9 place-items-center rounded-xl bg-signal text-ink">
+                        <Trophy className="size-[18px]" />
+                      </span>
+                      Troféus Freelin
+                    </p>
+                    <span className="rounded-full bg-signal-50 px-3 py-1 text-sm font-extrabold text-warn">2 troféus</span>
+                  </div>
+                  <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+                    {[
+                      ["🍸", "Coquetelaria clássica", "20 horas"],
+                      ["🔪", "Boas práticas na cozinha", "6 horas"],
+                    ].map(([emoji, title, hours]) => (
+                      <li key={title} className="flex items-center gap-3 rounded-2xl bg-mist p-3">
+                        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-paper text-xl ring-1 ring-line" aria-hidden>
+                          {emoji}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-semibold">{title}</span>
+                          <span className="block text-xs text-ink-3">Certificado de {hours}</span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </figure>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
       <SiteFooter />
     </div>
   );
@@ -302,5 +404,17 @@ function Steps({ title, steps, cta }: { title: string; steps: string[]; cta: { h
         {cta.label}
       </ButtonLink>
     </div>
+  );
+}
+
+function CourseStep({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <li className="flex gap-4">
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-paper text-brand ring-1 ring-line">{icon}</span>
+      <div>
+        <h3 className="font-bold">{title}</h3>
+        <p className="mt-0.5 leading-relaxed text-ink-2">{children}</p>
+      </div>
+    </li>
   );
 }
