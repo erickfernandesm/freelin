@@ -46,6 +46,7 @@ model User {
   reviewsWritten  Review[]           @relation("ReviewAuthor")
   reviewsReceived Review[]           @relation("ReviewTarget")
   enrollments     Enrollment[]
+  supportThreads  SupportThread[]
 
   @@index([role, status])
 }
@@ -497,4 +498,44 @@ model LessonProgress {
 
   @@id([enrollmentId, lessonId])
   @@index([lessonId])
+}
+
+// ─────────────────────────────── Suporte ───────────────────────────────
+// Conversa com a equipe pelo botão flutuante. Quem tem conta é identificado
+// pela sessão; visitante, por um cookie aleatório (guardado aqui só o hash).
+
+enum SupportStatus {
+  OPEN
+  CLOSED
+}
+
+model SupportThread {
+  id            String           @id @default(cuid())
+  userId        String?
+  user          User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  visitorKey    String?          @unique
+  name          String
+  contact       String?
+  status        SupportStatus    @default(OPEN)
+  unreadByAdmin Boolean          @default(true)
+  unreadByUser  Boolean          @default(false)
+  lastMessageAt DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+
+  messages SupportMessage[]
+
+  @@index([status, lastMessageAt])
+  @@index([userId])
+}
+
+model SupportMessage {
+  id        String        @id @default(cuid())
+  threadId  String
+  thread    SupportThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  fromAdmin Boolean       @default(false)
+  authorId  String?
+  body      String        @db.Text
+  createdAt DateTime      @default(now())
+
+  @@index([threadId, createdAt])
 }

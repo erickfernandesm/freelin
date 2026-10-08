@@ -131,7 +131,7 @@ Nada disso olha função, experiência, habilidades, nota ou histórico.
 | `/certificado/[código]` | Certificado verificável, pronto para imprimir ou salvar em PDF |
 
 ### Admin (`/admin`)
-Métricas; usuários (detalhe completo, edição de dados e senha, bloquear, tornar admin, excluir); oportunidades (moderar); atividade (ocultar avaliação); cursos (módulos, aulas, cobrança, inscrições); funções e cidades.
+Métricas; usuários (detalhe completo, edição de dados e senha, bloquear, tornar admin, excluir); oportunidades (moderar); atividade (ocultar avaliação); suporte (conversas do botão flutuante); cursos (módulos, aulas, cobrança, inscrições); funções e cidades.
 
 ### Cursos da plataforma
 - `Course` → `CourseModule` → `Lesson`; `Enrollment` liga pessoa e curso; `LessonProgress` marca aula concluída.
@@ -139,6 +139,13 @@ Métricas; usuários (detalhe completo, edição de dados e senha, bloquear, tor
 - Concluir a última aula grava `completedAt` e um código de certificado; o curso vira diploma e troféu no perfil do freelancer.
 - Regras puras em `src/server/domain/courses.ts` (acesso, validade, progresso, código), cobertas por testes.
 - Curso com `url` é vitrine de parceiro (link externo, sem aulas).
+
+### Suporte
+- Botão flutuante na página inicial e no app (`SupportWidget`), conversa única por pessoa.
+- Com conta: identificada pela sessão; a resposta também chega como notificação e o link reabre o suporte (`?suporte=1`).
+- Visitante: informa nome e contato na primeira mensagem; o navegador guarda um cookie aleatório (no banco fica só o hash sha256).
+- `GET/POST /api/suporte` para o widget; resposta, encerrar e reabrir pelo admin em `/admin/suporte` (server actions).
+- Limite de 15 mensagens a cada 5 minutos por conversa, para conter abuso.
 
 ### API
 Mutações são **Server Actions** em `src/actions/*` (tipadas, com CSRF nativo do Next). `GET /api/health` para monitoramento. Os serviços em `src/server/services` são a API interna e podem ser expostos como REST (app nativo, integrações) sem reescrever regra.

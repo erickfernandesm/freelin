@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BadgeCheck, Bell, GraduationCap, LayoutList, Lock, PlayCircle, Sprout, Trophy } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { SiteFooter } from "@/components/site-footer";
+import { SupportWidget } from "@/components/support-widget";
 import { Reveal } from "@/components/reveal";
 import { OpportunityTicket, type TicketData } from "@/components/opportunity-ticket";
 import { ButtonLink } from "@/components/ui/button";
@@ -372,6 +373,7 @@ export default async function Landing() {
       </section>
 
       <SiteFooter />
+      <SupportWidget />
     </div>
   );
 }

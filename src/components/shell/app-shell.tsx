@@ -3,6 +3,7 @@ import { GraduationCap, Plus } from "lucide-react";
 import type { CurrentUser } from "@/server/auth/session";
 import { Logo } from "@/components/brand";
 import { ButtonLink } from "@/components/ui/button";
+import { SupportWidget } from "@/components/support-widget";
 import { BellLink, BottomNav, DesktopNav, UserMenu } from "./nav";
 
 export function AppShell({
@@ -50,6 +51,7 @@ export function AppShell({
       </header>
       <main className="mx-auto max-w-[1440px] px-4 pt-6 md:px-8 md:pt-10">{children}</main>
       <BottomNav role={role} />
+      <SupportWidget aboveNav />
     </div>
   );
 }
