@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Instagram, Mail, MessageCircle } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { CONTACT } from "@/lib/site";
@@ -76,6 +77,19 @@ export function SiteFooter() {
               );
             })}
           </ul>
+        </div>
+      </div>
+      <div className="border-t border-line">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-5 text-sm text-ink-3">
+          <p>© {new Date().getFullYear()} Freelin</p>
+          <nav aria-label="Documentos" className="flex gap-5">
+            <Link href="/termos" className="hover:text-brand">
+              Termos de Uso
+            </Link>
+            <Link href="/privacidade" className="hover:text-brand">
+              Política de Privacidade
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>

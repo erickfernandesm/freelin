@@ -48,13 +48,17 @@ export const getCurrentUser = cache(async () => {
       status: true,
       avatarUrl: true,
       onboardedAt: true,
+      passwordChangedAt: true,
       freelancer: { select: { id: true } },
       contractor: { select: { id: true, displayName: true } },
     },
   });
   if (!user || user.status !== "ACTIVE") return null;
+  // Senha trocada depois deste login: a sessão antiga não vale mais (1 s de folga no relógio)
+  if (user.passwordChangedAt && session.issuedAt && session.issuedAt < user.passwordChangedAt.getTime() - 1000) return null;
+  const { passwordChangedAt: _changed, ...rest } = user;
   // Papel gravado no cookie: pode estar desatualizado se o admin mudou o tipo da conta
-  return { ...user, sessionRole: session.role };
+  return { ...rest, sessionRole: session.role };
 });
 
 export type CurrentUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;

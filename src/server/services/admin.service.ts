@@ -348,7 +348,7 @@ export async function adminUpdateUser(id: string, input: AdminUserInput) {
   await db.$transaction(async (tx) => {
     await tx.user.update({
       where: { id },
-      data: { name: input.name, email, phone: input.phone ?? null, ...(passwordHash ? { passwordHash } : {}) },
+      data: { name: input.name, email, phone: input.phone ?? null, ...(passwordHash ? { passwordHash, passwordChangedAt: new Date() } : {}) },
     });
     if (user.freelancer) {
       await tx.freelancerProfile.update({

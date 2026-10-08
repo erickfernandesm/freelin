@@ -3,6 +3,7 @@ import { db } from "@/server/db";
 import { DomainError, NotFoundError } from "@/server/errors";
 import { notify } from "@/server/notifications/notify";
 import { homeFor, type SessionRole } from "@/server/auth/token";
+import { randomToken, sha256Hex } from "@/server/crypto";
 
 /**
  * Suporte pelo botão flutuante. Cada pessoa tem UMA conversa: quem tem conta
@@ -16,15 +17,8 @@ const BURST_WINDOW_MS = 5 * 60_000;
 const BURST_LIMIT = 15;
 
 /** sha256 em hex: o cookie nunca é guardado em texto puro */
-export async function hashVisitorKey(token: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-export function newVisitorToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
+export const hashVisitorKey = sha256Hex;
+export const newVisitorToken = () => randomToken();
 
 function whereFor(actor: SupportActor) {
   return actor.kind === "user" ? { userId: actor.userId } : { visitorKey: actor.keyHash };

@@ -37,6 +37,10 @@ model User {
   avatarUrl    String?    @db.Text
   phone        String?
   onboardedAt  DateTime?
+  // Aceite dos Termos de Uso e da Política de Privacidade no cadastro
+  termsAcceptedAt DateTime?
+  // Trocar a senha encerra as sessões abertas antes desse momento
+  passwordChangedAt DateTime?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -47,8 +51,22 @@ model User {
   reviewsReceived Review[]           @relation("ReviewTarget")
   enrollments     Enrollment[]
   supportThreads  SupportThread[]
+  passwordResets  PasswordReset[]
 
   @@index([role, status])
+}
+
+// Link de "Esqueci minha senha": uso único, vale 1 hora. Guarda só o hash do token.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // ─────────────────────────────── Geografia ───────────────────────────────

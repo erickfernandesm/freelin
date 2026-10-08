@@ -37,6 +37,7 @@ export const signUpSchema = z.object({
   name: z.string().trim().min(2, "Informe seu nome").max(80),
   email: z.string().trim().toLowerCase().email("E-mail inválido"),
   password: z.string().min(8, "A senha precisa de pelo menos 8 caracteres").max(128),
+  acceptTerms: z.literal("on", { errorMap: () => ({ message: "Para criar a conta, aceite os Termos de Uso e a Política de Privacidade" }) }),
 });
 
 export const signInSchema = z.object({

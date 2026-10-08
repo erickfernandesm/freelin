@@ -19,6 +19,8 @@ export async function registerUser(input: {
       name: input.name,
       passwordHash,
       role: input.role,
+      // O cadastro só passa da validação com o aceite marcado
+      termsAcceptedAt: new Date(),
       ...(input.role === "FREELANCER"
         ? { freelancer: { create: {} } }
         : { contractor: { create: { displayName: input.name, segment: "" } } }),

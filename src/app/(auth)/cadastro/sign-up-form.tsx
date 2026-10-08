@@ -72,6 +72,33 @@ export function SignUpForm({ initialRole }: { initialRole?: "FREELANCER" | "CONT
       <Field label="Senha" htmlFor="password" error={fe.password} hint="Mínimo de 8 caracteres">
         <Input id="password" name="password" type="password" autoComplete="new-password" required invalid={!!fe.password} />
       </Field>
+      <div>
+        <label className="flex items-start gap-3 text-[15px] leading-snug text-ink-2">
+          <input
+            type="checkbox"
+            name="acceptTerms"
+            required
+            aria-invalid={!!fe.acceptTerms || undefined}
+            className="mt-0.5 size-5 shrink-0 accent-[var(--color-brand)]"
+          />
+          <span>
+            Li e aceito os{" "}
+            <a href="/termos" target="_blank" rel="noopener" className="font-semibold text-brand hover:underline">
+              Termos de Uso
+            </a>{" "}
+            e a{" "}
+            <a href="/privacidade" target="_blank" rel="noopener" className="font-semibold text-brand hover:underline">
+              Política de Privacidade
+            </a>
+            .
+          </span>
+        </label>
+        {fe.acceptTerms && (
+          <p className="mt-1.5 text-sm font-medium text-danger" role="alert">
+            {fe.acceptTerms}
+          </p>
+        )}
+      </div>
       <Button type="submit" size="lg" full loading={pending}>
         Criar conta
       </Button>

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { signInAction } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { useActionForm } from "@/components/use-action-form";
@@ -18,6 +19,11 @@ export function SignInForm({ next }: { next?: string }) {
       <Field label="Senha" htmlFor="password" error={fe.password}>
         <Input id="password" name="password" type="password" autoComplete="current-password" required invalid={!!fe.password} />
       </Field>
+      <div className="-mt-2 text-right">
+        <Link href="/esqueci-senha" className="text-sm font-semibold text-brand hover:underline">
+          Esqueci minha senha
+        </Link>
+      </div>
       <Button type="submit" size="lg" full loading={pending}>
         Entrar
       </Button>

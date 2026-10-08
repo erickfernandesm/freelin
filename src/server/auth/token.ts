@@ -8,7 +8,7 @@ export const SESSION_COOKIE = "freelin_session";
 export const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 dias
 
 export type SessionRole = "FREELANCER" | "CONTRACTOR" | "ADMIN";
-export type SessionPayload = { sub: string; role: SessionRole };
+export type SessionPayload = { sub: string; role: SessionRole; issuedAt?: number };
 
 function secret(): Uint8Array {
   const value = process.env.AUTH_SECRET;
@@ -32,7 +32,7 @@ export async function verifySession(token: string | undefined): Promise<SessionP
   try {
     const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });
     if (!payload.sub || typeof payload.role !== "string") return null;
-    return { sub: payload.sub, role: payload.role as SessionRole };
+    return { sub: payload.sub, role: payload.role as SessionRole, issuedAt: payload.iat ? payload.iat * 1000 : undefined };
   } catch {
     return null;
   }
